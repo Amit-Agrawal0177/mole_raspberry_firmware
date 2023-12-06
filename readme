@@ -1,0 +1,69 @@
+install ffmpeg, node js, python, boot script, hotspot
+
+npm i node-media-server
+pip install adafruit-circuitpython-adxl34x
+pip install paho-mqtt
+sudo apt update
+sudo apt install ffmpeg
+pip install opencv-python
+
+sudo apt update
+sudo apt install hostapd dnsmasq
+
+sudo nano /etc/dhcpcd.conf
+interface wlan0
+static ip_address=192.168.1.1/24
+nohook wpa_supplicant
+
+
+sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
+
+sudo nano /etc/dnsmasq.conf
+interface=wlan0
+dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
+
+
+sudo nano /etc/hostapd/hostapd.conf
+interface=wlan0
+ssid=mole
+hw_mode=g
+channel=7
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_passphrase=OEPP0001
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+
+
+sudo nano /etc/default/hostapd
+DAEMON_CONF="/etc/hostapd/hostapd.conf"
+
+
+sudo systemctl start hostapd
+sudo systemctl start dnsmasq
+
+
+sudo systemctl enable hostapd
+sudo systemctl enable dnsmasq
+
+sudo systemctl unmask hostapd
+sudo systemctl enable hostapd
+sudo systemctl restart hostapd
+sudo systemctl enable dnsmasq
+sudo systemctl restart dnsmasq
+
+
+sudo systemctl status hostapd
+sudo systemctl status dnsmasq
+
+
+
+
+
+
+
+
+

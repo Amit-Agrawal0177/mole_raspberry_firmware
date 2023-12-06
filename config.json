@@ -1,0 +1,18 @@
+{
+  "url": "molertmp.9930i.com",
+  "topic": "2",
+  "user": "mole",
+  "password": "Team@9930i",
+  "port": 27189,
+  "broker_address": "mole_mq.9930i.com",
+  "recording_path": "recordings",
+  "movement_path": "movement",
+  "fps" : 20,
+  "buffer_time" : 30,
+  "height" : 480,
+  "width" : 640,
+  "location_publish_interval" : 10,  
+  "accel_thr" : 1,
+  "duration" : 60,
+  "ameba_mac" : "54:f2:9f:51:64:14"
+}
