@@ -74,15 +74,18 @@ def find_ip_with_retry(target_mac):
 def on_message(client, userdata, msg):
     global process
     message = msg.payload.decode("utf-8")
-    print(f"Connected to MQTT broker: {message}")
+    print(f"message from MQTT broker: {message}", flush=True)
+    message = json.loads(message)
     
-    if message == "start":
-        if process is None or process.poll() is not None:
-            publish_mqtt(f'R/{topic}', json.dumps({"event": "streaming start"}))
-            start_streaming()
-    elif message == "stop":
-        publish_mqtt(f'R/{topic}', json.dumps({"event": "streaming stop"}))
-        stop_streaming()
+    if "ins" in message:
+        instruction = message["ins"]
+        if instruction == "start streaming":
+            if process is None or process.poll() is not None:
+                publish_mqtt(f'R/{topic}', json.dumps({"event": "streaming start"}))
+                start_streaming()
+        elif instruction == "stop streaming":
+            publish_mqtt(f'R/{topic}', json.dumps({"event": "streaming stop"}))
+            stop_streaming()
 
 
 def publish_mqtt(topic, message):
@@ -91,16 +94,17 @@ def publish_mqtt(topic, message):
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
-        print(f"Unexpected disconnection. Publishing will message. stream mqtt stop")
-        publish_mqtt(f'R/{topic}', json.dumps({"status": "unexpected_disconnection"}))
+        print(f"Unexpected disconnection. Publishing will message. stream mqtt stop", flush=True)
+        publish_mqtt(f'R/{topic}', json.dumps({"status": "streaming disconnected"}))
         stop_streaming()
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
-        print(f"Connected to MQTT broker: {broker_address} I/{topic}")
+        publish_mqtt(f'R/{topic}', json.dumps({"status": "streaming connected"}))
+        print(f"Connected to MQTT broker: {broker_address} I/{topic}", flush=True)
         client.subscribe(f'I/{topic}')
     else:
-        print(f"Failed to connect to MQTT broker with result code {rc}")
+        print(f"Failed to connect to MQTT broker with result code {rc}", flush=True)
 
 def start_streaming():
     global process
@@ -126,7 +130,7 @@ except Exception as e:
 
 try:
     client = mqtt.Client()
-    client.will_set(f'I/{topic}', payload=json.dumps({"status": "unexpected_disconnection"}), qos=0, retain=False)
+    client.will_set(f'R/{topic}', payload=json.dumps({"status": "streaming disconnected"}), qos=0, retain=False)
     client.on_disconnect = on_disconnect
     client.on_connect = on_connect 
     client.on_message = on_message 
@@ -134,7 +138,7 @@ try:
     client.connect(broker_address, port, 60)
     client.loop_start()  
 except:
-    print("mqtt connection fail", flush="True")
+    print("mqtt connection fail", flush=True)
 
 process = None
 

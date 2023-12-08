@@ -107,11 +107,11 @@ function startProcess() {
   const movementProcess = spawn('python', ['py_scripts/test1.py']);
 
   movementProcess.stdout.on('data', (data) => {
-    console.log(`movementOut: ${data}`);
+    //console.log(`movementOut: ${data}`);
   });
 
   movementProcess.stderr.on('data', (data) => {
-    console.error(`movementErr: ${data}`);
+    //console.error(`movementErr: ${data}`);
   });
 
   movementProcess.on('close', (code) => {
