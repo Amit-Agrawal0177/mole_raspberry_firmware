@@ -90,11 +90,11 @@ function startProcess() {
   const streamingProcess = spawn('python', ['py_scripts/streaming_script.py']);
 
   streamingProcess.stdout.on('data', (data) => {
-    //console.log(`streamingOut: ${data}`);
+    console.log(`streamingOut: ${data}`);
   });
 
   streamingProcess.stderr.on('data', (data) => {
-    //console.error(`streamingErr: ${data}`);
+    console.error(`streamingErr: ${data}`);
   });
 
   streamingProcess.on('close', (code) => {
@@ -104,7 +104,7 @@ function startProcess() {
 
 
 
-  const movementProcess = spawn('python', ['py_scripts/pir_mqtt.py']);
+  const movementProcess = spawn('python', ['py_scripts/test1.py']);
 
   movementProcess.stdout.on('data', (data) => {
     console.log(`movementOut: ${data}`);
@@ -123,14 +123,14 @@ function startProcess() {
 
 
 
-  const recordingProcess = spawn('python', ['py_scripts/videoRecording.py']);
+  const recordingProcess = spawn('python', ['py_scripts/test.py']);
 
   recordingProcess.stdout.on('data', (data) => {
-    console.log(`recordingOut: ${data}`);
+    //console.log(`recordingOut: ${data}`);
   });
 
   recordingProcess.stderr.on('data', (data) => {
-    console.error(`recordingErr: ${data}`);
+    //console.error(`recordingErr: ${data}`);
   });
 
   recordingProcess.on('close', (code) => {
@@ -142,11 +142,11 @@ function startProcess() {
   const s3Process = spawn('python', ['py_scripts/videoToServer.py']);
 
   s3Process.stdout.on('data', (data) => {
-    console.log(`s3Out: ${data}`);
+    //console.log(`s3Out: ${data}`);
   });
 
   s3Process.stderr.on('data', (data) => {
-    console.error(`s3Err: ${data}`);
+    //console.error(`s3Err: ${data}`);
   });
 
   s3Process.on('close', (code) => {

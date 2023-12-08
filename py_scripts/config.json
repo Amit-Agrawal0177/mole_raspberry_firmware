@@ -13,6 +13,6 @@
   "width" : 640,
   "location_publish_interval" : 10,  
   "accel_thr" : 1,
-  "duration" : 60,
+  "duration" : 300,
   "ameba_mac" : "54:f2:9f:51:64:14"
 }

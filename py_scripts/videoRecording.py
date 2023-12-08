@@ -35,22 +35,18 @@ try:
                     print(f"Deleting folder from 7 days ago: {folder_path}")
                     shutil.rmtree(folder_path)
             
-        # Generate a timestamp for the video filename and folder
         timestamp_now = datetime.now()
         date_folder = timestamp_now.strftime("%Y-%m-%d")
         output_folder = os.path.join(output_folder_base, date_folder)
 
-        # Create 'recordings' folder if not present
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
 
         timestamp = timestamp_now.strftime("%Y-%m-%d_%H-%M-%S")
         output_filename = os.path.join(output_folder, f"video_{timestamp}.avi")
 
-        # Set up OpenCV VideoCapture for RTMP stream
         cap = cv2.VideoCapture(rtmp_url)
 
-        # Set up OpenCV VideoWriter to save the output video
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
         out = cv2.VideoWriter(output_filename, fourcc, fps, (int(cap.get(3)), int(cap.get(4))))
 

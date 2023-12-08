@@ -1,36 +1,57 @@
 import os
+import json
+import shutil
+from datetime import datetime, timedelta
 import subprocess
 
-def find_usb_port(device_path):
-    try:
-        result = subprocess.run(['udevadm', 'info', '--query=property', '--name=' + device_path], capture_output=True, text=True)
-        
-        for line in result.stdout.split('\n'):
-            if 'ID_PATH=' in line:
-                # Extract the USB port number
-                usb_port_info = line.split('=')[1]
-                return int(usb_port_info.split('.')[-1])
+config_file_path = 'config.json'
+with open(config_file_path, 'r') as file:
+    config_data = json.load(file)
 
-    except FileNotFoundError:
-        print("udevadm command not found. Make sure udev is installed on your system.")
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
+url = config_data['url']
+topic = config_data['topic']
+output_folder_base = config_data['recording_path']
+fps = config_data['fps']
+width = config_data['width']
+height = config_data['height']
+duration = config_data['duration']
 
-    return None
+rtmp_url = "rtmp://localhost:1935/live"
 
-def find_ttyUSB0(max_ports=10):
-    for i in range(max_ports):
-        device_path = f'/dev/ttyUSB{i}'
-        if os.path.exists(device_path):
-            usb_port_index = find_usb_port(device_path)
-            if usb_port_index is not None:
-                print(f"/dev/ttyUSB0 is connected to USB port: {usb_port_index}")
-                return usb_port_index
+role_back_days = 7
 
-    print("/dev/ttyUSB0 not found on any USB port.")
-    return None
+try:
+    while True:
+        timestamp_now = datetime.now()
+        seven_days_ago = timestamp_now - timedelta(days=role_back_days)
+        base_folder_to_delete = os.path.join(output_folder_base)
 
-if __name__ == "__main__":
-    usb_port_index = find_ttyUSB0()
-    if usb_port_index is not None:
-        print(f"The device is connected to USB port index: {usb_port_index}")
+        for folder_name in os.listdir(base_folder_to_delete):
+            folder_path = os.path.join(base_folder_to_delete, folder_name)
+
+            if os.path.isdir(folder_path):
+                folder_date = datetime.strptime(folder_name, "%Y-%m-%d")
+
+                if folder_date <= seven_days_ago:
+                    print(f"Deleting folder from 7 days ago: {folder_path}")
+                    shutil.rmtree(folder_path)
+
+        timestamp_now = datetime.now()
+        date_folder = timestamp_now.strftime("%Y-%m-%d")
+        output_folder = os.path.join(output_folder_base, date_folder)
+
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
+
+        timestamp = timestamp_now.strftime("%Y-%m-%d_%H-%M-%S")
+        output_filename = os.path.join(output_folder, f"video_{timestamp}.mp4")
+
+        ffmpeg_cmd = (
+            f"ffmpeg -i {rtmp_url} -t {duration} -r {fps} "
+            f"-vf scale={width}:{height} -c:a copy -c:v libx264 -preset ultrafast {output_filename}"
+        )
+
+        subprocess.run(ffmpeg_cmd, shell=True)
+
+except KeyboardInterrupt:
+    print("Recording interrupted by user.")
