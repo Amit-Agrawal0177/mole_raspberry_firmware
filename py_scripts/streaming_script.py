@@ -55,7 +55,7 @@ def find_ip_with_retry(target_mac):
     max_retries = 5
     retries = 0
 
-    while retries < max_retries:
+    while True:
         result = subprocess.run(["arp", "-a"], capture_output=True, text=True)
         if result.returncode == 0:
             arp_output = result.stdout

@@ -54,6 +54,7 @@ waitForInternet();
 //sudo systemctl enable my-node-app
 //sudo systemctl status my-node-app
 
+
 const config = {
   rtmp: {
     port: 1935, // RTMP port
@@ -68,10 +69,27 @@ const config = {
 const nms = new NodeMediaServer(config);
 nms.run();
 
-
-
 function startProcess() {
+  streamingLocal();
+  streamingGlobal();
+  savingVideo();
+  // sensePirMovment();
+  // senseAdxlMovment();
+  // fileToS3();
+  // localDirAccess();
+  // networkCheck();
+}
 
+console.log("Server Start");
+
+setTimeout(() => {
+  console.log("Timeout completed after 2000 milliseconds");
+  startProcess();
+}, 5000);
+
+console.log("End");
+
+function streamingLocal() {
   const localProcess = spawn('python', ['py_scripts/streaming_local.py']);
 
   localProcess.stdout.on('data', (data) => {
@@ -84,9 +102,11 @@ function startProcess() {
 
   localProcess.on('close', (code) => {
     console.log(`local child process exited with code ${code}`);
+    streamingLocal();
   });
+}
 
-
+function streamingGlobal() {
   const streamingProcess = spawn('python', ['py_scripts/streaming_script.py']);
 
   streamingProcess.stdout.on('data', (data) => {
@@ -99,11 +119,11 @@ function startProcess() {
 
   streamingProcess.on('close', (code) => {
     console.log(`streaming child process exited with code ${code}`);
+    streamingGlobal();
   });
+}
 
-
-
-
+function sensePirMovment() {
   const movementProcess = spawn('python', ['py_scripts/test1.py']);
 
   movementProcess.stdout.on('data', (data) => {
@@ -116,14 +136,29 @@ function startProcess() {
 
   movementProcess.on('close', (code) => {
     console.log(`movement child process exited with code ${code}`);
+    sensePirMovment();
+  });
+}
+
+function senseAdxlMovment() {
+  const movementProcess = spawn('python', ['py_scripts/test1.py']);
+
+  movementProcess.stdout.on('data', (data) => {
+    //console.log(`movementOut: ${data}`);
   });
 
+  movementProcess.stderr.on('data', (data) => {
+    //console.error(`movementErr: ${data}`);
+  });
 
+  movementProcess.on('close', (code) => {
+    console.log(`movement child process exited with code ${code}`);
+    senseAdxlMovment();
+  });
+}
 
-
-
-
-  const recordingProcess = spawn('python', ['py_scripts/test.py']);
+function savingVideo() {
+  const recordingProcess = spawn('python', ['py_scripts/videoRecording.py']);
 
   recordingProcess.stdout.on('data', (data) => {
     //console.log(`recordingOut: ${data}`);
@@ -135,10 +170,11 @@ function startProcess() {
 
   recordingProcess.on('close', (code) => {
     console.log(`recording child process exited with code ${code}`);
+    savingVideo();
   });
+}
 
-
-
+function fileToS3() {
   const s3Process = spawn('python', ['py_scripts/videoToServer.py']);
 
   s3Process.stdout.on('data', (data) => {
@@ -151,10 +187,11 @@ function startProcess() {
 
   s3Process.on('close', (code) => {
     console.log(`s3 child process exited with code ${code}`);
+    fileToS3();
   });
+}
 
-
-
+function localDirAccess() {
   const ftpProcess = spawn('python', ['py_scripts/ftp.py']);
 
   ftpProcess.stdout.on('data', (data) => {
@@ -167,8 +204,11 @@ function startProcess() {
 
   ftpProcess.on('close', (code) => {
     console.log(`ftpProcess child process exited with code ${code}`);
+    localDirAccess();
   });
+}
 
+function networkCheck() {
 
   const nrProcess = spawn('python', ['py_scripts/networkRestart.py']);
 
@@ -182,16 +222,6 @@ function startProcess() {
 
   nrProcess.on('close', (code) => {
     console.log(`networkRestart child process exited with code ${code}`);
+    networkCheck();
   });
-
 }
-
-console.log("Start");
-
-setTimeout(() => {
-    console.log("Timeout completed after 2000 milliseconds");
-    startProcess();
-}, 5000);
-
-
-console.log("End");

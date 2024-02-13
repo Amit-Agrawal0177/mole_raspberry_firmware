@@ -1,9 +1,8 @@
-import cv2
-import time
 import os
-from datetime import datetime, timedelta
 import json
 import shutil
+from datetime import datetime, timedelta
+import subprocess
 
 config_file_path = 'config.json'
 with open(config_file_path, 'r') as file:
@@ -19,10 +18,12 @@ duration = config_data['duration']
 
 rtmp_url = "rtmp://localhost:1935/live"
 
+role_back_days = 7
+
 try:
     while True:
         timestamp_now = datetime.now()
-        seven_days_ago = timestamp_now - timedelta(days=1)
+        seven_days_ago = timestamp_now - timedelta(days=role_back_days)
         base_folder_to_delete = os.path.join(output_folder_base)
 
         for folder_name in os.listdir(base_folder_to_delete):
@@ -34,7 +35,7 @@ try:
                 if folder_date <= seven_days_ago:
                     print(f"Deleting folder from 7 days ago: {folder_path}")
                     shutil.rmtree(folder_path)
-            
+
         timestamp_now = datetime.now()
         date_folder = timestamp_now.strftime("%Y-%m-%d")
         output_folder = os.path.join(output_folder_base, date_folder)
@@ -43,31 +44,14 @@ try:
             os.makedirs(output_folder)
 
         timestamp = timestamp_now.strftime("%Y-%m-%d_%H-%M-%S")
-        output_filename = os.path.join(output_folder, f"video_{timestamp}.avi")
+        output_filename = os.path.join(output_folder, f"video_{timestamp}.mp4")
 
-        cap = cv2.VideoCapture(rtmp_url)
+        ffmpeg_cmd = (
+            f"ffmpeg -i {rtmp_url} -t {duration} -r {fps} "
+            f"-vf scale={width}:{height} -c:a copy -c:v libx264 -preset ultrafast {output_filename}"
+        )
 
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter(output_filename, fourcc, fps, (int(cap.get(3)), int(cap.get(4))))
-
-        start_time = time.time()
-
-        while time.time() - start_time < duration:
-            ret, frame = cap.read()
-            if not ret:
-                print("Error reading frame. Exiting...")
-                break
-
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            cv2.putText(frame, timestamp, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            out.write(frame)
-
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        cap.release()
-        out.release()
-        cv2.destroyAllWindows()
+        subprocess.run(ffmpeg_cmd, shell=True)
 
 except KeyboardInterrupt:
     print("Recording interrupted by user.")
