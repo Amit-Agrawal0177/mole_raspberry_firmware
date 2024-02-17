@@ -30,7 +30,7 @@ broker_address = config_data['broker_address']
 def on_message(client, userdata, msg):
     global process
     global last_message_time
-    if msg.topic == "abc":
+    if msg.topic == f"Ia/{topic}":
         play_sound(io.BytesIO(msg.payload))
     else:
         message = msg.payload.decode("utf-8")
@@ -55,8 +55,6 @@ def on_message(client, userdata, msg):
                     write_new_file(input_json_file, "0", "alert_mode")
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "alert mode stopped"}))
                     
-            else:
-                play_sound(io.BytesIO(msg.payload))
                     
         except:
             pass
@@ -75,7 +73,7 @@ def on_connect(client, userdata, flags, rc):
         publish_mqtt(f'R/{topic}', json.dumps({"status": "device connected"}))
         print(f"Connected to MQTT broker: {broker_address} I/{topic}", flush=True)
         client.subscribe(f'I/{topic}')
-        client.subscribe(f'abc')
+        client.subscribe(f'Ia/{topic}')
     else:
         print(f"Failed to connect to MQTT broker with result code {rc}", flush=True)
 

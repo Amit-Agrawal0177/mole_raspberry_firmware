@@ -77,10 +77,10 @@ const nms = new NodeMediaServer(config);
 nms.run();
 
 function startProcess() {  
-  //streamingGlobal();
-  //sensePirMovment();
+  streamingGlobal();
+  sensePirMovment();
   senseAdxlMovment();
-  //fileToS3();
+  fileToS3();
   saveArray();
   //networkCheck();
 }

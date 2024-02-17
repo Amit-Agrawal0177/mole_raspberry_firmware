@@ -1,1 +1,1 @@
-{"demand_mode": "0", "alert_mode": "1", "nw_strength": "", "pir_status": "1", "adxl_status": "0", "stream_status": "", "lat": "2241.189072", "long": "07551.597207", "x-axis": -0.8629851999999999, "y-axis": -3.6873004, "z-axis": -10.2381426, "timestamp": "2024:02:16 18:49:33"}
+{"demand_mode": "1", "alert_mode": "1", "nw_strength": "", "pir_status": "1", "adxl_status": "0", "stream_status": "0", "lat": "", "long": "", "x-axis": -3.4911673999999997, "y-axis": -5.727083599999999, "z-axis": -8.590625399999999, "timestamp": "2024:02:17 11:28:44"}

@@ -2,3 +2,6 @@ movement/
 recordings/
 .git/
 node_modules/
+output.json
+config.json
+stat.json
