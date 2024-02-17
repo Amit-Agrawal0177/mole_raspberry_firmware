@@ -20,6 +20,9 @@ rtmp_url = "rtmp://localhost:1935/live"
 
 role_back_days = 7
 
+if not os.path.exists(output_folder_base):
+    os.makedirs(output_folder_base)
+
 try:
     while True:
         timestamp_now = datetime.now()

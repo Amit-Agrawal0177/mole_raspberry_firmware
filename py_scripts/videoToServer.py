@@ -41,7 +41,7 @@ def process_videos():
         print(f"allFiles: {all_files}", flush=True)
 
         for filename in all_files:
-            if filename.endswith(".avi"):
+            if filename.endswith(".mp4"):
                 file_path = os.path.join(movement_folder, filename)
                 modification_time = datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
 
@@ -54,7 +54,7 @@ def process_videos():
 def main():
     while True:
         process_videos()
-        time.sleep(30)
+        time.sleep(45)
 
 if __name__ == "__main__":
     main()

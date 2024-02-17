@@ -1,6 +1,6 @@
 {
   "url": "molertmp.9930i.com",
-  "topic": "2",
+  "topic": "3",
   "user": "mole",
   "password": "Team@9930i",
   "port": 27189,
@@ -14,5 +14,5 @@
   "location_publish_interval" : 10,  
   "accel_thr" : 1,
   "duration" : 300,
-  "ameba_mac" : "54:f2:9f:51:64:14"
+  "ameba_mac" : "54:f2:9f:51:66:3e"
 }

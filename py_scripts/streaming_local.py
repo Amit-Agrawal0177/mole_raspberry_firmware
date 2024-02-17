@@ -11,6 +11,21 @@ with open(config_file_path, 'r') as file:
 mac = config_data['ameba_mac']
 rtmp_url = f'rtmp://localhost:1935/live/'
 
+stats = {
+		"demand_mode" : "",
+		"nw_strength" : "",
+		"pir_status" : "",
+		"adxl_status" : "",
+		"stream_status" : "",
+		"lat" : "",
+		"long" : "",
+		"x-axis" : "",
+		"y-axis" : "",
+		"z-axis" : "" 
+}
+json_file_path = 'stat.json'
+with open(json_file_path, 'w') as file:
+    json.dump(stats, file)
 
 def get_ips_for_mac(target_mac, arp_output):
     pattern = re.compile(r"(\S+) \((\d+\.\d+\.\d+\.\d+)\) at (\S+)")

@@ -1,0 +1,44 @@
+[
+  {
+    "demand_mode": "0",
+    "alert_mode": "1",
+    "nw_strength": "",
+    "pir_status": "1",
+    "adxl_status": "1",
+    "stream_status": "",
+    "lat": "2241.189071",
+    "long": "07551.597205",
+    "x-axis": -0.8629851999999999,
+    "y-axis": -3.726527,
+    "z-axis": -10.198916,
+    "timestamp": "2024:02:16 18:49:03"
+  },
+  {
+    "demand_mode": "0",
+    "alert_mode": "1",
+    "nw_strength": "",
+    "pir_status": "1",
+    "adxl_status": "1",
+    "stream_status": "",
+    "lat": "2241.189069",
+    "long": "07551.597207",
+    "x-axis": -0.8629851999999999,
+    "y-axis": -3.726527,
+    "z-axis": -10.198916,
+    "timestamp": "2024:02:16 18:49:13"
+  },
+  {
+    "demand_mode": "0",
+    "alert_mode": "1",
+    "nw_strength": "",
+    "pir_status": "1",
+    "adxl_status": "1",
+    "stream_status": "",
+    "lat": "2241.189071",
+    "long": "07551.597207",
+    "x-axis": -0.8629851999999999,
+    "y-axis": -3.726527,
+    "z-axis": -10.198916,
+    "timestamp": "2024:02:16 18:49:23"
+  }
+]

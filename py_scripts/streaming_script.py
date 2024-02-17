@@ -19,7 +19,6 @@ import re
 import paho.mqtt.client as mqtt
 import signal
 
-
 config_file_path = 'config.json'
 with open(config_file_path, 'r') as file:
     config_data = json.load(file)
@@ -73,6 +72,7 @@ def find_ip_with_retry(target_mac):
 
 def on_message(client, userdata, msg):
     global process
+    global last_message_time
     message = msg.payload.decode("utf-8")
     print(f"message from MQTT broker: {message}", flush=True)
     message = json.loads(message)
@@ -83,20 +83,26 @@ def on_message(client, userdata, msg):
             if process is None or process.poll() is not None:
                 publish_mqtt(f'R/{topic}', json.dumps({"event": "streaming start"}))
                 start_streaming()
-        elif instruction == "stop streaming":
-            publish_mqtt(f'R/{topic}', json.dumps({"event": "streaming stop"}))
-            stop_streaming()
+                json_file_path = 'stat.json'
+                with open(json_file_path, 'r') as file:
+                    stats = json.load(file)
+                    
+                stats['stream_status'] = "1"
+                
+                with open(json_file_path, 'w') as file:
+                    json.dump(stats, file)
 
+    # Update the last message time
+    last_message_time = time.time()
 
 def publish_mqtt(topic, message):
     client.publish(topic, message)
-    
 
 def on_disconnect(client, userdata, rc):
     if rc != 0:
         print(f"Unexpected disconnection. Publishing will message. stream mqtt stop", flush=True)
         publish_mqtt(f'R/{topic}', json.dumps({"status": "streaming disconnected"}))
-        stop_streaming()
+        #stop_streaming()
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -117,43 +123,41 @@ def stop_streaming():
     if process is not None and process.poll() is None:
         print("Stopping streaming.", flush=True)
         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+        json_file_path = 'stat.json'
+        with open(json_file_path, 'r') as file:
+            stats = json.load(file)
+            
+        stats['stream_status'] = "0"
+        
+        with open(json_file_path, 'w') as file:
+            json.dump(stats, file)
+        publish_mqtt(f'R/{topic}', json.dumps({"event": "streaming stop"}))
         process = None
 
 client = mqtt.Client()
 client.on_message = on_message
 
-try:
-    ip = find_ip_with_retry(mac)
-    allot_ip = ip[0]
-except Exception as e:
-    print(f"An error occurred: {str(e)}", flush=True)
 
-try:
-    client = mqtt.Client()
-    client.will_set(f'R/{topic}', payload=json.dumps({"status": "streaming disconnected"}), qos=0, retain=False)
-    client.on_disconnect = on_disconnect
-    client.on_connect = on_connect 
-    client.on_message = on_message 
-    client.username_pw_set(user, password)
-    client.connect(broker_address, port, 60)
-    client.loop_start()  
-except:
-    print("mqtt connection fail", flush=True)
+ip = find_ip_with_retry(mac)
+allot_ip = ip[0]
+
+
+client = mqtt.Client()
+client.will_set(f'R/{topic}', payload=json.dumps({"status": "streaming disconnected"}), qos=0, retain=False)
+client.on_disconnect = on_disconnect
+client.on_connect = on_connect 
+client.on_message = on_message 
+client.username_pw_set(user, password)
+client.connect(broker_address, port, 60)
+client.loop_start()  
+    
 
 process = None
+last_message_time = time.time()
 
-try:
-    while True:
-        time.sleep(1)
-
-except KeyboardInterrupt:
-    if process is not None and process.poll() is None:
-        print("Stopping streaming due to keyboard interrupt.", flush=True)
-        os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-        process = None
-
-    client.disconnect()
-    client.loop_stop()
-
-
-
+while True:
+    time.sleep(10)
+    # Check if more than 10 seconds have passed since the last message
+    if time.time() - last_message_time > 30:
+        #print("No message received in the last 10 seconds. Stopping streaming.", flush=True)
+        stop_streaming()

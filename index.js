@@ -48,11 +48,18 @@ async function waitForInternet() {
 }
 
 waitForInternet();
+* 
+* 
+  //streamingLocal();
+  //savingVideo();
+  //localDirAccess();
+  //sendGpsData();
+  * 
 */
 //sudo systemctl daemon-reload
-//sudo systemctl start my-node-app
-//sudo systemctl enable my-node-app
-//sudo systemctl status my-node-app
+//sudo systemctl start myscript.service
+//sudo systemctl enable myscript.service
+//sudo systemctl status myscript.service
 
 
 const config = {
@@ -69,15 +76,13 @@ const config = {
 const nms = new NodeMediaServer(config);
 nms.run();
 
-function startProcess() {
-  streamingLocal();
-  streamingGlobal();
-  savingVideo();
-  // sensePirMovment();
-  // senseAdxlMovment();
-  // fileToS3();
-  // localDirAccess();
-  // networkCheck();
+function startProcess() {  
+  //streamingGlobal();
+  //sensePirMovment();
+  senseAdxlMovment();
+  //fileToS3();
+  saveArray();
+  //networkCheck();
 }
 
 console.log("Server Start");
@@ -93,11 +98,11 @@ function streamingLocal() {
   const localProcess = spawn('python', ['py_scripts/streaming_local.py']);
 
   localProcess.stdout.on('data', (data) => {
-    //console.log(`localOut: ${data}`);
+    console.log(`localOut: ${data}`);
   });
 
   localProcess.stderr.on('data', (data) => {
-    //console.error(`localErr: ${data}`);
+    console.error(`localErr: ${data}`);
   });
 
   localProcess.on('close', (code) => {
@@ -124,35 +129,35 @@ function streamingGlobal() {
 }
 
 function sensePirMovment() {
-  const movementProcess = spawn('python', ['py_scripts/test1.py']);
+  const movementProcess = spawn('python', ['py_scripts/pir_mqtt.py']);
 
   movementProcess.stdout.on('data', (data) => {
-    //console.log(`movementOut: ${data}`);
+    console.log(`pir movementOut: ${data}`);
   });
 
   movementProcess.stderr.on('data', (data) => {
-    //console.error(`movementErr: ${data}`);
+    console.error(`pir movementErr: ${data}`);
   });
 
   movementProcess.on('close', (code) => {
-    console.log(`movement child process exited with code ${code}`);
+    console.log(`pir movement child process exited with code ${code}`);
     sensePirMovment();
   });
 }
 
 function senseAdxlMovment() {
-  const movementProcess = spawn('python', ['py_scripts/test1.py']);
+  const movementProcess = spawn('python', ['py_scripts/gps_adxl_pir.py']);
 
   movementProcess.stdout.on('data', (data) => {
-    //console.log(`movementOut: ${data}`);
+    console.log(`Adxl movementOut: ${data}`);
   });
 
   movementProcess.stderr.on('data', (data) => {
-    //console.error(`movementErr: ${data}`);
+    console.error(`Adxl movementErr: ${data}`);
   });
 
   movementProcess.on('close', (code) => {
-    console.log(`movement child process exited with code ${code}`);
+    console.log(`Adxl movement child process exited with code ${code}`);
     senseAdxlMovment();
   });
 }
@@ -161,11 +166,11 @@ function savingVideo() {
   const recordingProcess = spawn('python', ['py_scripts/videoRecording.py']);
 
   recordingProcess.stdout.on('data', (data) => {
-    //console.log(`recordingOut: ${data}`);
+    console.log(`recordingOut: ${data}`);
   });
 
   recordingProcess.stderr.on('data', (data) => {
-    //console.error(`recordingErr: ${data}`);
+    console.error(`recordingErr: ${data}`);
   });
 
   recordingProcess.on('close', (code) => {
@@ -174,15 +179,32 @@ function savingVideo() {
   });
 }
 
+function sendGpsData() {
+  const gpsProcess = spawn('python', ['py_scripts/gpsData.py']);
+
+  gpsProcess.stdout.on('data', (data) => {
+    console.log(`gpsProcess Out: ${data}`);
+  });
+
+  gpsProcess.stderr.on('data', (data) => {
+    console.error(`gpsProcess Err: ${data}`);
+  });
+
+  gpsProcess.on('close', (code) => {
+    console.log(`gpsProcess child process exited with code ${code}`);
+    sendGpsData();
+  });
+}
+
 function fileToS3() {
   const s3Process = spawn('python', ['py_scripts/videoToServer.py']);
 
   s3Process.stdout.on('data', (data) => {
-    //console.log(`s3Out: ${data}`);
+    console.log(`s3Out: ${data}`);
   });
 
   s3Process.stderr.on('data', (data) => {
-    //console.error(`s3Err: ${data}`);
+   console.error(`s3Err: ${data}`);
   });
 
   s3Process.on('close', (code) => {
@@ -223,5 +245,23 @@ function networkCheck() {
   nrProcess.on('close', (code) => {
     console.log(`networkRestart child process exited with code ${code}`);
     networkCheck();
+  });
+}
+
+function saveArray() {
+
+  const nrProcess = spawn('python', ['py_scripts/Data2Server.py']);
+
+  nrProcess.stdout.on('data', (data) => {
+    console.log(`networkRestart Out: ${data}`);
+  });
+
+  nrProcess.stderr.on('data', (data) => {
+    console.error(`networkRestart Err: ${data}`);
+  });
+
+  nrProcess.on('close', (code) => {
+    console.log(`networkRestart child process exited with code ${code}`);
+    saveArray();
   });
 }
