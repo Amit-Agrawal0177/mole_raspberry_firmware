@@ -80,6 +80,7 @@ def on_message(client, userdata, msg):
                     
                 elif instruction == "start ota":
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "ota started"}))
+                    ota_raspberry_pi()
                     
         except:
             pass
