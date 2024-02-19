@@ -46,7 +46,7 @@ gb_stats = {
 
 def on_message(client, userdata, msg):
     global process
-    global last_message_time
+    global last_message_time, last_demand_message_time
     if msg.topic == f"Ia/{topic}":
         play_sound(io.BytesIO(msg.payload))
     else:
@@ -81,7 +81,14 @@ def on_message(client, userdata, msg):
                 elif instruction == "start ota":
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "ota started"}))
                     ota_raspberry_pi()
-                    
+                           
+            elif "fps" in message:
+                d = read_existing_file(config_file_path)
+                d["fps"] = message["fps"]
+                d["height"] = message["height"]
+                d["width"] = message["width"]
+
+                write_existing_file(config_file_path, d)
         except:
             pass
 
