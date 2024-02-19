@@ -1,6 +1,7 @@
 import json
 import time
 import paho.mqtt.client as mqtt
+import subprocess
 
 import io
 from pydub import AudioSegment
@@ -20,12 +21,28 @@ with open(config_file_path, 'r') as file:
 url = config_data['url']
 topic = config_data['topic']
 mac = config_data['ameba_mac']
-topic = config_data['topic']
 
 user = config_data['user']
 password = config_data['password']
 port = config_data['port']
 broker_address = config_data['broker_address']
+
+gb_stats = {
+		"demand_mode" : "0",
+		"nw_strength" : "",
+		"pir_status" : "",
+		"adxl_status" : "",
+		"stream_status" : "",
+		"lat" : "",
+		"long" : "",
+		"x-axis" : "",
+		"y-axis" : "",
+		"z-axis" : "" ,
+		"timestamp" : "" ,
+		"alert_mode" : "1" ,
+		"ver" : "1" 
+}
+
 
 def on_message(client, userdata, msg):
     global process
@@ -42,10 +59,7 @@ def on_message(client, userdata, msg):
                 if instruction == "start demand mode":
                     write_new_file(input_json_file, "1", "demand_mode")
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "demand mode started"}))
-                    
-                elif instruction == "stop demand mode":
-                    write_new_file(input_json_file, "0", "demand_mode")
-                    publish_mqtt(f'R/{topic}', json.dumps({"event": "demand mode stopped"}))
+                    last_demand_message_time = time.time()                    
                             
                 elif instruction == "start alert mode":
                     write_new_file(input_json_file, "1", "alert_mode")
@@ -55,10 +69,25 @@ def on_message(client, userdata, msg):
                     write_new_file(input_json_file, "0", "alert_mode")
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "alert mode stopped"}))
                     
+                elif instruction == "start reboot":
+                    publish_mqtt(f'R/{topic}', json.dumps({"event": "reboot mode started"}))
+                    reboot_raspberry_pi()
+                    
+                elif instruction == "start streaming":
+                    write_new_file(input_json_file, "1", "stream_status")
+                    publish_mqtt(f'R/{topic}', json.dumps({"event": "stream mode started"}))
+                    last_message_time = time.time()
+                    
                     
         except:
             pass
-            
+
+def reboot_raspberry_pi():
+    try:
+        subprocess.run(['sudo', 'reboot'])
+    except Exception as e:
+        print(f"Error: {e}")
+                    
 def publish_mqtt(topic, message):
     client.publish(topic, message)
 
@@ -91,19 +120,34 @@ client.loop_start()
 
 
 def read_json_file(file_path):
-    with open(file_path, 'r') as file:
-        json_data = json.load(file)
-    return json_data
+    try:
+        with open(file_path, 'r') as file:
+            json_data = json.load(file)
+        return json_data    
+    except Exception as e:
+        with open(file_path, 'w') as file:
+            json.dump(gb_stats, file, indent=2)
+        return gb_stats
 
 def read_existing_file(file_path):
-    with open(file_path, 'r') as file:
-        json_data = json.load(file)
-    return json_data
+    try:
+        with open(file_path, 'r') as file:
+            json_data = json.load(file)
+        return json_data
+    except Exception as e:
+        with open(file_path, 'w') as file:
+            json.dump([], file, indent=2)
+        return []
+    
 
 def write_existing_file(file_path, data):
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent=2)
-        
+    try:
+        with open(file_path, 'w') as file:
+            json.dump(data, file, indent=2)
+    except Exception as e:
+        with open(file_path, 'w') as file:
+            json.dump([], file, indent=2)
+            
 def write_new_file(json_file_path, flag, mode):
     with open(json_file_path, 'r') as file:
         stats = json.load(file)
@@ -116,10 +160,9 @@ def write_new_file(json_file_path, flag, mode):
 push_interval = 30
 data_timer = time.time() + push_interval
 flag = 0
-flag2 = 0
-flag3 = 0
-flag4 = 0
 current_time = time.time()
+last_message_time = time.time()
+last_demand_message_time = time.time()
 
 def main():
     global data_timer, push_interval, flag, current_time
@@ -127,34 +170,33 @@ def main():
     while True:
         json_data = read_json_file(input_json_file)
         
-        print(json_data["demand_mode"], json_data["alert_mode"], flush=True)
         existing_data = read_existing_file(output_file)
         existing_data.append(json_data)
         
         write_existing_file(output_file, existing_data)        
             
-        if json_data["demand_mode"] == "1" and json_data["alert_mode"] == "1":
+        if json_data["demand_mode"] == "1" and json_data["adxl_status"] == "1":
             if flag == 0:
                 flag = 1
                 push_interval = 10
                 data_timer = current_time + push_interval
             
-        elif json_data["demand_mode"] == "1" and json_data["alert_mode"] == "0":
+        elif json_data["demand_mode"] == "1" and json_data["adxl_status"] == "0":
             if flag == 0:
                 flag = 1
-                push_interval = 30
+                push_interval = 600
                 data_timer = current_time + push_interval
             
-        elif json_data["demand_mode"] == "0" and json_data["alert_mode"] == "1":
+        elif json_data["demand_mode"] == "0" and json_data["adxl_status"] == "1":
             if flag == 0:
                 flag = 1
-                push_interval = 60
+                push_interval = 600
                 data_timer = current_time + push_interval
             
-        elif json_data["demand_mode"] == "0" and json_data["alert_mode"] == "0":
+        elif json_data["demand_mode"] == "0" and json_data["adxl_status"] == "0":
             if flag == 0:
                 flag = 1
-                push_interval = 90
+                push_interval = 3600
                 data_timer = current_time + push_interval
             
         current_time = time.time()
@@ -162,7 +204,17 @@ def main():
             publish_mqtt(f'R/{topic}', json.dumps(existing_data))
             write_existing_file(output_file, [])
             flag = 0
-            
+        
+        if time.time() - last_message_time > 30:
+            if json_data["stream_status"] == "1":
+                write_new_file(input_json_file, "0", "stream_status")
+                publish_mqtt(f'R/{topic}', json.dumps({"event": "stream mode stopped"}))
+        
+        if time.time() - last_demand_message_time > 30:
+            if json_data["stream_status"] == "1":
+                write_new_file(input_json_file, "0", "demand_mode")
+                publish_mqtt(f'R/{topic}', json.dumps({"event": "demand mode stopped"}))
+                
         time.sleep(10)
 
 if __name__ == "__main__":

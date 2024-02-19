@@ -40,7 +40,43 @@ GPIO.setup(input_pin, GPIO.IN)
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
+gb_stats = {
+		"demand_mode" : "0",
+		"nw_strength" : "",
+		"pir_status" : "",
+		"adxl_status" : "",
+		"stream_status" : "0",
+		"lat" : "",
+		"long" : "",
+		"x-axis" : "",
+		"y-axis" : "",
+		"z-axis" : "" ,
+		"timestamp" : "" ,
+		"alert_mode" : "1" ,
+		"ver" : "1" 
+}
 
+def read_json_file():
+    try:
+        file_path = 'stat.json' 
+        with open(file_path, 'r') as file:
+            json_data = json.load(file)
+        return json_data    
+    except Exception as e:
+        with open(file_path, 'w') as file:
+            json.dump(gb_stats, file, indent=2)
+        return gb_stats
+
+def write_new_file(flag, mode):    
+    json_file_path = 'stat.json' 
+    with open(json_file_path, 'r') as file:
+        stats = json.load(file)
+        
+    stats[mode] = flag
+    
+    with open(json_file_path, 'w') as file:
+        json.dump(stats, file)
+        
 allot_ip = ""
 
 def get_ips_for_mac(target_mac, arp_output):
@@ -90,49 +126,38 @@ try:
     while True:        
         input_state = GPIO.input(input_pin)
         print(input_state, flush="True")
+        json_data = read_json_file()
+    
+        if json_data["alert_mode"] == "1":
 
-        if input_state == GPIO.HIGH:
-            json_file_path = 'stat.json'
-            with open(json_file_path, 'r') as file:
-                stats = json.load(file)
-                
-            stats['pir_status'] = "1"
-            
-            with open(json_file_path, 'w') as file:
-                json.dump(stats, file)
-                
-            start_time = time.time()
-            if not recording:
-                print("Starting to record...", flush=True)
-                #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement start"}))
-                recording = True
-                start_time = time.time()
-                timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-                output_filename = os.path.join(output_folder, f"video_{timestamp}.mp4")
-
-                ffmpeg_cmd = (
-                    f"ffmpeg -i rtsp://{allot_ip}:555 -t {buffer_time} -r {fps} "
-                    f"-vf scale={width}:{height} -c:a copy -c:v libx264 -preset ultrafast {output_filename}"
-                )
-
-                subprocess.run(ffmpeg_cmd, shell=True)
-                chunk_start_time = time.time()
-
-        if recording:
-            elapsed_time = time.time() - start_time
-            if elapsed_time >= buffer_time:
-                json_file_path = 'stat.json'
-                with open(json_file_path, 'r') as file:
-                    stats = json.load(file)
+            if input_state == GPIO.HIGH:
+                write_new_file("1", 'pir_status')
                     
-                stats['pir_status'] = "0"
-                
-                with open(json_file_path, 'w') as file:
-                    json.dump(stats, file)
-                print("Stopping recording...", flush=True)
-                #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement stop"}))
-                recording = False
-                chunk_start_time = time.time()
+                start_time = time.time()
+                if not recording:
+                    print("Starting to record...", flush=True)
+                    #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement start"}))
+                    recording = True
+                    start_time = time.time()
+                    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+                    output_filename = os.path.join(output_folder, f"video_{timestamp}.mp4")
+
+                    ffmpeg_cmd = (
+                        f"ffmpeg -i rtsp://{allot_ip}:555 -t {buffer_time} -r {fps} "
+                        f"-vf scale={width}:{height} -c:a copy -c:v libx264 -preset ultrafast {output_filename}"
+                    )
+
+                    subprocess.run(ffmpeg_cmd, shell=True)
+                    chunk_start_time = time.time()
+
+            if recording:
+                elapsed_time = time.time() - start_time
+                if elapsed_time >= buffer_time:
+                    write_new_file("0", 'pir_status')
+                    print("Stopping recording...", flush=True)
+                    #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement stop"}))
+                    recording = False
+                    chunk_start_time = time.time()
 
         current_time = time.time()
         time.sleep(5)

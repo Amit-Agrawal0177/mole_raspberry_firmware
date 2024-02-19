@@ -33,6 +33,13 @@ restart_var = 0
 def on_publish_location():
     #print("on_publish_location", flush=True)
     global restart_var
+    
+    command = "AT+CSQ"
+    ser.write((command + "\r\n").encode())
+    response = ser.read_until(b'OK\r\n').decode(errors='ignore')
+    nw = response.split(':')[1].split(',')[0].strip()
+    #print(f"response {nw} {response}", flush=True)
+    
     command = "AT+CGPSINFO"
     ser.write((command + "\r\n").encode())
     response = ser.read_until(b'OK\r\n').decode(errors='ignore')
@@ -59,7 +66,6 @@ def on_publish_location():
             x = ser.read_until(b'OK\r\n').decode(errors='ignore')
             print(f"r {x}", flush=True)
             restart_var = 0
-    #print(f"restart_var {restart_var}", flush=True)
     
     json_file_path = 'stat.json'
     with open(json_file_path, 'r') as file:
@@ -69,6 +75,7 @@ def on_publish_location():
     stats['long'] = longitude
     cTime = datetime.now()
     stats['timestamp'] = cTime.strftime('%Y:%m:%d %H:%M:%S')
+    stats['nw_strength'] = nw
     
     with open(json_file_path, 'w') as file:
         json.dump(stats, file)
