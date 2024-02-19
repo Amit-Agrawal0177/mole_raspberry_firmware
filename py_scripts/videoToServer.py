@@ -4,6 +4,7 @@ import requests
 import time
 import json
 
+
 config_file_path = 'config.json'
 
 try:
