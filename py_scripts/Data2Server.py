@@ -78,6 +78,8 @@ def on_message(client, userdata, msg):
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "stream mode started"}))
                     last_message_time = time.time()
                     
+                elif instruction == "start ota":
+                    publish_mqtt(f'R/{topic}', json.dumps({"event": "ota started"}))
                     
         except:
             pass
@@ -85,6 +87,12 @@ def on_message(client, userdata, msg):
 def reboot_raspberry_pi():
     try:
         subprocess.run(['sudo', 'reboot'])
+    except Exception as e:
+        print(f"Error: {e}")
+
+def ota_raspberry_pi():
+    try:
+        subprocess.run(['git', 'pull', 'origin', 'develop'])
     except Exception as e:
         print(f"Error: {e}")
                     
