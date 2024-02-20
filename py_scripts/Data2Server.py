@@ -13,6 +13,8 @@ def play_sound(sound_file):
 
 input_json_file = 'stat.json' 
 output_file = 'output.json'
+last_message_time = time.time()
+last_demand_message_time = time.time()
 
 config_file_path = 'config.json'
 with open(config_file_path, 'r') as file:
@@ -177,11 +179,9 @@ push_interval = 30
 data_timer = time.time() + push_interval
 flag = 0
 current_time = time.time()
-last_message_time = time.time()
-last_demand_message_time = time.time()
 
 def main():
-    global data_timer, push_interval, flag, current_time
+    global data_timer, push_interval, flag, current_time, last_demand_message_time, last_message_time
 
     while True:
         json_data = read_json_file(input_json_file)
@@ -200,19 +200,19 @@ def main():
         elif json_data["demand_mode"] == "1" and json_data["adxl_status"] == "0":
             if flag == 0:
                 flag = 1
-                push_interval = 600
+                push_interval = 60
                 data_timer = current_time + push_interval
             
         elif json_data["demand_mode"] == "0" and json_data["adxl_status"] == "1":
             if flag == 0:
                 flag = 1
-                push_interval = 600
+                push_interval = 60
                 data_timer = current_time + push_interval
             
         elif json_data["demand_mode"] == "0" and json_data["adxl_status"] == "0":
             if flag == 0:
                 flag = 1
-                push_interval = 3600
+                push_interval = 300
                 data_timer = current_time + push_interval
             
         current_time = time.time()
