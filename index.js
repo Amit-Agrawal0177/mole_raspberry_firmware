@@ -253,15 +253,15 @@ function saveArray() {
   const nrProcess = spawn('python', ['py_scripts/Data2Server.py']);
 
   nrProcess.stdout.on('data', (data) => {
-    console.log(`networkRestart Out: ${data}`);
+    console.log(`saveArray Out: ${data}`);
   });
 
   nrProcess.stderr.on('data', (data) => {
-    console.error(`networkRestart Err: ${data}`);
+    console.error(`saveArray Err: ${data}`);
   });
 
   nrProcess.on('close', (code) => {
-    console.log(`networkRestart child process exited with code ${code}`);
+    console.log(`saveArray child process exited with code ${code}`);
     saveArray();
   });
 }

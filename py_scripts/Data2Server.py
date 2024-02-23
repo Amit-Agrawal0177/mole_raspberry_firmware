@@ -175,51 +175,89 @@ def write_new_file(json_file_path, flag, mode):
     with open(json_file_path, 'w') as file:
         json.dump(stats, file)
 
-push_interval = 30
+push_interval = 10
 data_timer = time.time() + push_interval
-flag = 0
+flag1 = 0
+flag2 = 0
+flag3 = 0
+flag4 = 0
 current_time = time.time()
+save_time = time.time()
 
 def main():
-    global data_timer, push_interval, flag, current_time, last_demand_message_time, last_message_time
+    global data_timer, push_interval, flag1, flag2, flag3, flag4, current_time, last_demand_message_time, last_message_time, save_time
 
     while True:
         json_data = read_json_file(input_json_file)
         
         existing_data = read_existing_file(output_file)
-        existing_data.append(json_data)
-        
-        write_existing_file(output_file, existing_data)        
             
         if json_data["demand_mode"] == "1" and json_data["adxl_status"] == "1":
-            if flag == 0:
-                flag = 1
+            if flag1 == 0:
+                flag1 = 1
+                flag2 = 0
+                flag3 = 0
+                flag4 = 0
                 push_interval = 10
                 data_timer = current_time + push_interval
+                
+            existing_data.append(json_data)        
+            write_existing_file(output_file, existing_data)   
             
         elif json_data["demand_mode"] == "1" and json_data["adxl_status"] == "0":
-            if flag == 0:
-                flag = 1
-                push_interval = 60
+            if flag2 == 0:
+                flag1 = 0
+                flag2 = 1
+                flag3 = 0
+                flag4 = 0
+                push_interval = 120
                 data_timer = current_time + push_interval
+                save_timer = save_time + 60
+                
+            save_time = time.time()
+            if save_time >= save_timer:
+                save_timer = save_time + 60
+                existing_data.append(json_data)
+                write_existing_file(output_file, existing_data)    
             
         elif json_data["demand_mode"] == "0" and json_data["adxl_status"] == "1":
-            if flag == 0:
-                flag = 1
-                push_interval = 60
+            if flag3 == 0:
+                flag1 = 0
+                flag2 = 0
+                flag3 = 1
+                flag4 = 0
+                push_interval = 120
                 data_timer = current_time + push_interval
+                save_timer = save_time + 60
+                
+            save_time = time.time()
+            if save_time >= save_timer:
+                save_timer = save_time + 60
+                existing_data.append(json_data)
+                write_existing_file(output_file, existing_data)  
             
         elif json_data["demand_mode"] == "0" and json_data["adxl_status"] == "0":
-            if flag == 0:
-                flag = 1
-                push_interval = 300
+            if flag4 == 0:
+                flag1 = 0
+                flag2 = 0
+                flag3 = 0
+                flag4 = 1
+                push_interval = 1800
                 data_timer = current_time + push_interval
-            
+                save_timer = save_time + 600
+                
+            save_time = time.time()
+            if save_time >= save_timer:
+                save_timer = save_time + 600
+                existing_data.append(json_data)
+                write_existing_file(output_file, existing_data)  
+        
         current_time = time.time()
+        #print(f'{json_data["demand_mode"]} {json_data["adxl_status"]} {current_time} {data_timer} {data_timer - current_time}', flush=True)
         if current_time >= data_timer:
             publish_mqtt(f'R/{topic}', json.dumps(existing_data))
             write_existing_file(output_file, [])
-            flag = 0
+            data_timer = current_time + push_interval
         
         if time.time() - last_message_time > 30:
             if json_data["stream_status"] == "1":
@@ -227,7 +265,7 @@ def main():
                 publish_mqtt(f'R/{topic}', json.dumps({"event": "stream mode stopped"}))
         
         if time.time() - last_demand_message_time > 30:
-            if json_data["stream_status"] == "1":
+            if json_data["demand_mode"] == "1":
                 write_new_file(input_json_file, "0", "demand_mode")
                 publish_mqtt(f'R/{topic}', json.dumps({"event": "demand mode stopped"}))
                 

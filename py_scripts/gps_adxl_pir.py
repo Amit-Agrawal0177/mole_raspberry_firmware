@@ -30,59 +30,68 @@ thr = config_data['accel_thr']
 location_publish_interval = config_data['location_publish_interval']
 restart_var = 0
 
+def convert_format(lat, long):
+    lat_degrees = int(lat[:2]) + float(lat[2:]) / 60
+    long_degrees = int(long[:3]) + float(long[3:]) / 60
+    return lat_degrees, long_degrees
+    
 def on_publish_location():
-    #print("on_publish_location", flush=True)
-    global restart_var
-    
-    command = "AT+CSQ"
-    ser.write((command + "\r\n").encode())
-    response = ser.read_until(b'OK\r\n').decode(errors='ignore')
-    nw = response.split(':')[1].split(',')[0].strip()
-    #print(f"response {nw} {response}", flush=True)
-    
-    command = "AT+CGPSINFO"
-    ser.write((command + "\r\n").encode())
-    response = ser.read_until(b'OK\r\n').decode(errors='ignore')
-    
-    latitude = ""
-    longitude = ""
-    
-    values = response.strip().split(',')
-    if len(response) > 15:
-        latitude = values[0]
-        longitude = values[2]
-        latitude = latitude.replace("+CGPSINFO: ", "")
-        restart_var = 0
+    try:
+        #print("on_publish_location", flush=True)
+        global restart_var
         
-    if len(longitude) == 0:
-        restart_var = restart_var + 1
-        if restart_var > 5:
-            ser.write("AT+CGPS=0\r\n".encode())
-            x = ser.read_until(b'OK\r\n').decode(errors='ignore')
-            print(f"r {x}", flush=True)
-            
-            
-            ser.write("AT+CGPS=1\r\n".encode())
-            x = ser.read_until(b'OK\r\n').decode(errors='ignore')
-            print(f"r {x}", flush=True)
+        command = "AT+CSQ"
+        ser.write((command + "\r\n").encode())
+        response = ser.read_until(b'OK\r\n').decode(errors='ignore')
+        nw = response.split(':')[1].split(',')[0].strip()
+        #print(f"response {nw} {response}", flush=True)
+        
+        command = "AT+CGPSINFO"
+        ser.write((command + "\r\n").encode())
+        response = ser.read_until(b'OK\r\n').decode(errors='ignore')
+        
+        latitude = ""
+        longitude = ""
+        
+        values = response.strip().split(',')
+        if len(response) > 15:
+            latitude = values[0]
+            longitude = values[2]
+            latitude = latitude.replace("+CGPSINFO: ", "")
             restart_var = 0
-    
-    json_file_path = 'stat.json'
-    with open(json_file_path, 'r') as file:
-        stats = json.load(file)
+            output_lat, output_long = convert_format(latitude, longitude)
+            
+        if len(longitude) == 0:
+            restart_var = restart_var + 1
+            if restart_var > 5:
+                ser.write("AT+CGPS=0\r\n".encode())
+                x = ser.read_until(b'OK\r\n').decode(errors='ignore')
+                print(f"r {x}", flush=True)
+                
+                
+                ser.write("AT+CGPS=1\r\n".encode())
+                x = ser.read_until(b'OK\r\n').decode(errors='ignore')
+                print(f"r {x}", flush=True)
+                restart_var = 0
         
-    stats['lat'] = latitude
-    stats['long'] = longitude
-    cTime = datetime.now()
-    stats['timestamp'] = cTime.strftime('%Y:%m:%d %H:%M:%S')
-    stats['nw_strength'] = nw
-    
-    with open(json_file_path, 'w') as file:
-        json.dump(stats, file)
-    
-    location_message = {"lat": latitude, "long": longitude}
-    #print(f"gps {location_message}", flush=True)
-    #publish_mqtt(f'R/{topic}', json.dumps(location_message))
+        json_file_path = 'stat.json'
+        with open(json_file_path, 'r') as file:
+            stats = json.load(file)
+            
+        stats['lat'] = output_lat
+        stats['long'] = output_long
+        cTime = datetime.now()
+        stats['timestamp'] = cTime.strftime('%Y:%m:%d %H:%M:%S')
+        stats['nw_strength'] = nw
+        
+        with open(json_file_path, 'w') as file:
+            json.dump(stats, file)
+        
+        location_message = {"lat": latitude, "long": longitude}
+        #print(f"gps {location_message}", flush=True)
+        #publish_mqtt(f'R/{topic}', json.dumps(location_message))
+    except Exception as e:
+        print(f"An error occurred: {str(e)}", flush=True)
 
 def find_usb_port(device_path):
     try:
