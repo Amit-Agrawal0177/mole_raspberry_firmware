@@ -2,10 +2,16 @@ import json
 import time
 import paho.mqtt.client as mqtt
 import subprocess
-
+import RPi.GPIO as GPIO
 import io
 from pydub import AudioSegment
 from pydub.playback import play
+
+output_pin = 18
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(output_pin, GPIO.OUT)
 
 def play_sound(sound_file):
     sound = AudioSegment.from_file(sound_file)
@@ -113,12 +119,14 @@ def on_disconnect(client, userdata, rc):
     if rc != 0:
         print(f"Unexpected disconnection. Publishing will message. stream mqtt stop", flush=True)
         publish_mqtt(f'R/{topic}', json.dumps({"status": "device disconnected"}))
+        GPIO.output(output_pin, GPIO.LOW)
         #stop_streaming()
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         publish_mqtt(f'R/{topic}', json.dumps({"status": "device connected"}))
         print(f"Connected to MQTT broker: {broker_address} I/{topic}", flush=True)
+        GPIO.output(output_pin, GPIO.HIGH)
         client.subscribe(f'I/{topic}')
         client.subscribe(f'Ia/{topic}')
     else:

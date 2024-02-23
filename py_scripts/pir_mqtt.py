@@ -32,10 +32,12 @@ rtmp_url = "rtmp://localhost:1935/live"
 upload_url = 'https://moleapi.9930i.com/s3/uploadFile'
 
 input_pin = 17
+output_pin = 27
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(input_pin, GPIO.IN)
+GPIO.setup(output_pin, GPIO.OUT)
 
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
@@ -132,6 +134,7 @@ try:
 
             if input_state == GPIO.HIGH:
                 write_new_file("1", 'pir_status')
+                GPIO.output(output_pin, GPIO.HIGH)
                     
                 start_time = time.time()
                 if not recording:
@@ -154,6 +157,7 @@ try:
                 elapsed_time = time.time() - start_time
                 if elapsed_time >= buffer_time:
                     write_new_file("0", 'pir_status')
+                    GPIO.output(output_pin, GPIO.LOW)
                     print("Stopping recording...", flush=True)
                     #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement stop"}))
                     recording = False
