@@ -47,7 +47,7 @@ gb_stats = {
 		"y-axis" : "",
 		"z-axis" : "" ,
 		"timestamp" : "" ,
-		"alert_mode" : "1" ,
+		"alert_mode" : "0" ,
 		"ver" : "1" 
 }
 
@@ -272,10 +272,10 @@ def main():
                 write_new_file(input_json_file, "0", "stream_status")
                 publish_mqtt(f'R/{topic}', json.dumps({"event": "stream mode stopped"}))
         
-        if time.time() - last_demand_message_time > 30:
-            if json_data["demand_mode"] == "1":
-                write_new_file(input_json_file, "0", "demand_mode")
-                publish_mqtt(f'R/{topic}', json.dumps({"event": "demand mode stopped"}))
+        # if time.time() - last_demand_message_time > 1800:
+        #     if json_data["demand_mode"] == "1":
+        #         write_new_file(input_json_file, "0", "demand_mode")
+        #         publish_mqtt(f'R/{topic}', json.dumps({"event": "demand mode stopped"}))
                 
         time.sleep(10)
 

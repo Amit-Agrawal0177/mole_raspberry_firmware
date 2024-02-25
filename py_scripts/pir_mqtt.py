@@ -54,7 +54,7 @@ gb_stats = {
 		"y-axis" : "",
 		"z-axis" : "" ,
 		"timestamp" : "" ,
-		"alert_mode" : "1" ,
+		"alert_mode" : "0" ,
 		"ver" : "1" 
 }
 

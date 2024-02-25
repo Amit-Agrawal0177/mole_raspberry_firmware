@@ -33,8 +33,8 @@ allot_ip = ""
 gb_stats = {
 		"demand_mode" : "0",
 		"nw_strength" : "",
-		"pir_status" : "",
-		"adxl_status" : "",
+		"pir_status" : "0",
+		"adxl_status" : "0",
 		"stream_status" : "0",
 		"lat" : "",
 		"long" : "",
@@ -42,7 +42,7 @@ gb_stats = {
 		"y-axis" : "",
 		"z-axis" : "" ,
 		"timestamp" : "" ,
-		"alert_mode" : "1" ,
+		"alert_mode" : "0" ,
 		"ver" : "1" 
 }
 
