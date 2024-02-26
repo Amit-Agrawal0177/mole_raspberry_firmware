@@ -44,15 +44,15 @@ if not os.path.exists(output_folder):
 
 gb_stats = {
 		"demand_mode" : "0",
-		"nw_strength" : "",
-		"pir_status" : "",
-		"adxl_status" : "",
+		"nw_strength" : "0",
+		"pir_status" : "0",
+		"adxl_status" : "0",
 		"stream_status" : "0",
-		"lat" : "",
-		"long" : "",
-		"x-axis" : "",
-		"y-axis" : "",
-		"z-axis" : "" ,
+		"lat" : "0",
+		"long" : "0",
+		"x-axis" : "0",
+		"y-axis" : "0",
+		"z-axis" : "0" ,
 		"timestamp" : "" ,
 		"alert_mode" : "0" ,
 		"ver" : "1" 

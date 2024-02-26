@@ -37,15 +37,15 @@ broker_address = config_data['broker_address']
 
 gb_stats = {
 		"demand_mode" : "0",
-		"nw_strength" : "",
-		"pir_status" : "",
-		"adxl_status" : "",
-		"stream_status" : "",
-		"lat" : "",
-		"long" : "",
-		"x-axis" : "",
-		"y-axis" : "",
-		"z-axis" : "" ,
+		"nw_strength" : "0",
+		"pir_status" : "0",
+		"adxl_status" : "0",
+		"stream_status" : "0",
+		"lat" : "0",
+		"long" : "0",
+		"x-axis" : "0",
+		"y-axis" : "0",
+		"z-axis" : "0" ,
 		"timestamp" : "" ,
 		"alert_mode" : "0" ,
 		"ver" : "1" 
@@ -259,7 +259,11 @@ def main():
                 save_timer = save_time + 600
                 existing_data.append(json_data)
                 write_existing_file(output_file, existing_data)  
-        
+
+        else :
+            existing_data.append(json_data)
+            write_existing_file(output_file, existing_data) 
+
         current_time = time.time()
         #print(f'{json_data["demand_mode"]} {json_data["adxl_status"]} {current_time} {data_timer} {data_timer - current_time}', flush=True)
         if current_time >= data_timer:
