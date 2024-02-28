@@ -145,8 +145,16 @@ location_timer = time.time() + location_publish_interval
 try:    
     while True:        
         x, y, z = accelerometer.acceleration
-        #current_time = datetime.now()
-        #print("%f %f %f" % (x, y, z), flush=True)
+        json_file_path = 'stat.json'
+        with open(json_file_path, 'r') as file:
+            stats = json.load(file)
+            
+        stats['x-axis'] = x
+        stats['y-axis'] = y
+        stats['z-axis'] = z
+        
+        with open(json_file_path, 'w') as file:
+            json.dump(stats, file)
         
         if (x1 - thr > x) or (x1 + thr < x) or (y1 - thr > y) or (y1 + thr < y) or (z1 - thr > z) or (z1 + thr < z):
             if accel_flag == 0:
