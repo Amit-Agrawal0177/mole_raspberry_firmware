@@ -42,7 +42,8 @@ gb_stats = {
 		"y-axis" : "0",
 		"z-axis" : "0" ,
 		"timestamp" : "" ,
-		"alert_mode" : "0" ,
+		"alert_mode" : "0",
+		"audio_flag" : "0",
 		"ver" : "1" 
 }
 
@@ -105,6 +106,7 @@ def stop_streaming():
         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
         process = None
 
+
 ip = find_ip_with_retry(mac)
 allot_ip = ip[0]
    
@@ -113,7 +115,7 @@ process = None
 last_message_time = time.time()
 
 while True:
-    time.sleep(10)
+    time.sleep(2)
     json_data = read_json_file()
     
     if json_data["stream_status"] == "1":

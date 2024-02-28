@@ -4,8 +4,10 @@ import paho.mqtt.client as mqtt
 import subprocess
 import RPi.GPIO as GPIO
 import io
+import re
 from pydub import AudioSegment
 from pydub.playback import play
+import os
 
 output_pin = 18
 
@@ -34,6 +36,7 @@ user = config_data['user']
 password = config_data['password']
 port = config_data['port']
 broker_address = config_data['broker_address']
+allot_ip = ""
 
 gb_stats = {
 		"demand_mode" : "0",
@@ -47,7 +50,8 @@ gb_stats = {
 		"y-axis" : "0",
 		"z-axis" : "0" ,
 		"timestamp" : "" ,
-		"alert_mode" : "0" ,
+		"alert_mode" : "0",
+		"audio_flag" : "0",
 		"ver" : "1" 
 }
 
@@ -55,8 +59,11 @@ gb_stats = {
 def on_message(client, userdata, msg):
     global process
     global last_message_time, last_demand_message_time
-    if msg.topic == f"Ia/{topic}":
-        play_sound(io.BytesIO(msg.payload))
+    if msg.topic == f"Ia/{topic}":        
+        temp_audio_file = "audio.mp3"
+        with open(temp_audio_file, "wb") as audio_file:
+            audio_file.write(msg.payload)
+        write_new_file(input_json_file, "1", "audio_flag")
     else:
         message = msg.payload.decode("utf-8")
         print(f"message from MQTT broker: {message}", flush=True)
@@ -99,7 +106,7 @@ def on_message(client, userdata, msg):
                 write_existing_file(config_file_path, d)
         except:
             pass
-
+    
 def reboot_raspberry_pi():
     try:
         subprocess.run(['sudo', 'reboot'])
@@ -132,8 +139,6 @@ def on_connect(client, userdata, flags, rc):
     else:
         print(f"Failed to connect to MQTT broker with result code {rc}", flush=True)
 
-client = mqtt.Client()
-client.on_message = on_message
 
 client = mqtt.Client()
 client.will_set(f'R/{topic}', payload=json.dumps({"status": "device disconnected"}), qos=0, retain=False)
@@ -182,6 +187,7 @@ def write_new_file(json_file_path, flag, mode):
     
     with open(json_file_path, 'w') as file:
         json.dump(stats, file)
+
 
 push_interval = 10
 data_timer = time.time() + push_interval

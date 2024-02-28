@@ -82,6 +82,7 @@ function startProcess() {
   senseAdxlMovment();
   fileToS3();
   saveArray();
+  playAudio();
   //networkCheck();
 }
 
@@ -179,23 +180,6 @@ function savingVideo() {
   });
 }
 
-function sendGpsData() {
-  const gpsProcess = spawn('python', ['py_scripts/gpsData.py']);
-
-  gpsProcess.stdout.on('data', (data) => {
-    console.log(`gpsProcess Out: ${data}`);
-  });
-
-  gpsProcess.stderr.on('data', (data) => {
-    console.error(`gpsProcess Err: ${data}`);
-  });
-
-  gpsProcess.on('close', (code) => {
-    console.log(`gpsProcess child process exited with code ${code}`);
-    sendGpsData();
-  });
-}
-
 function fileToS3() {
   const s3Process = spawn('python', ['py_scripts/videoToServer.py']);
 
@@ -263,5 +247,23 @@ function saveArray() {
   nrProcess.on('close', (code) => {
     console.log(`saveArray child process exited with code ${code}`);
     saveArray();
+  });
+}
+
+function playAudio() {
+
+  const nrProcess = spawn('python', ['py_scripts/playAudio.py']);
+
+  nrProcess.stdout.on('data', (data) => {
+    console.log(`playAudio Out: ${data}`);
+  });
+
+  nrProcess.stderr.on('data', (data) => {
+    console.error(`playAudio Err: ${data}`);
+  });
+
+  nrProcess.on('close', (code) => {
+    console.log(`playAudio child process exited with code ${code}`);
+    playAudio();
   });
 }

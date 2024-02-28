@@ -54,7 +54,8 @@ gb_stats = {
 		"y-axis" : "0",
 		"z-axis" : "0" ,
 		"timestamp" : "" ,
-		"alert_mode" : "0" ,
+		"alert_mode" : "0",
+		"audio_flag" : "0",
 		"ver" : "1" 
 }
 
@@ -164,7 +165,7 @@ try:
                     chunk_start_time = time.time()
 
         current_time = time.time()
-        time.sleep(5)
+        time.sleep(2)
 
 except KeyboardInterrupt:
     GPIO.cleanup()
