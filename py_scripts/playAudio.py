@@ -106,7 +106,7 @@ process = None
 last_message_time = time.time()
 
 while True:
-    time.sleep(2)
+    time.sleep(1)
     json_data = read_json_file()
     
     if json_data["audio_flag"] == "1":
