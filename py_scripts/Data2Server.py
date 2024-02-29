@@ -175,7 +175,14 @@ def read_existing_file(file_path):
         with open(file_path, 'w') as file:
             json.dump([], file, indent=2)
         return []
-    
+
+def write_prev_file(file_path, data):
+    try:
+        with open(file_path, 'w') as file:
+            json.dump(data, file, indent=2)
+    except Exception as e:
+        with open(file_path, 'w') as file:
+            json.dump(gb_stats, file, indent=2)
 
 def write_existing_file(file_path, data):
     try:
@@ -211,6 +218,22 @@ def main():
         json_data = read_json_file(input_json_file)
         
         existing_data = read_existing_file(output_file)
+        
+        prev_data = read_json_file("prev_stats.json")
+        
+        if json_data["adxl_status"] == "0" and prev_data["adxl_status"] == "1":
+            publish_mqtt(f'R/{topic}', json.dumps({"event": "adxl movement stopped"}))
+            
+        if json_data["adxl_status"] == "1" and prev_data["adxl_status"] == "0":
+            publish_mqtt(f'R/{topic}', json.dumps({"event": "adxl movement started"}))
+            
+        if json_data["pir_status"] == "0" and prev_data["pir_status"] == "1":
+            publish_mqtt(f'R/{topic}', json.dumps({"event": "pir movement stopped"}))
+            
+        if json_data["pir_status"] == "1" and prev_data["pir_status"] == "0":
+            publish_mqtt(f'R/{topic}', json.dumps({"event": "pir movement started"}))
+            
+        write_prev_file("prev_stats.json", json_data)
             
         if json_data["demand_mode"] == "1" and json_data["adxl_status"] == "1":
             if flag1 == 0:

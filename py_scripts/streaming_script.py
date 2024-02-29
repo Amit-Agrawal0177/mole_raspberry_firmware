@@ -104,6 +104,7 @@ def stop_streaming():
     if process is not None and process.poll() is None:
         print(f"Stopping streaming.{process.pid}", flush=True)
         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+	process.wait()
         process = None
 
 
