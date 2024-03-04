@@ -14,6 +14,7 @@ sda_pin = 2
 
 i2c = busio.I2C(scl=scl_pin, sda=sda_pin)
 accelerometer = adafruit_adxl34x.ADXL345(i2c)
+accelerometer.range = adafruit_adxl34x.Range.RANGE_16_G
 
 x1 = 0
 y1 = 0
@@ -28,6 +29,7 @@ with open(config_file_path, 'r') as file:
 thr = config_data['accel_thr']
 location_publish_interval = config_data['location_publish_interval']
 restart_var = 0
+duration = config_data['duration']
 
 def convert_format(lat, long):
     lat_degrees = int(lat[:2]) + float(lat[2:]) / 60
@@ -178,7 +180,7 @@ try:
             z1 = z
             accel_flag = 1
             
-        if accel_flag == 1 and accel_count >= 60 :
+        if accel_flag == 1 and accel_count >= duration :
             accel_flag = 0
             accel_count = 0
             print("**** inactivity Occur **** ", flush=True)
