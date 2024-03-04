@@ -14,7 +14,7 @@ sda_pin = 2
 
 i2c = busio.I2C(scl=scl_pin, sda=sda_pin)
 accelerometer = adafruit_adxl34x.ADXL345(i2c)
-accelerometer.range = adafruit_adxl34x.Range.RANGE_16_G
+accelerometer.range = adafruit_adxl34x.Range.RANGE_2_G
 
 x1 = 0
 y1 = 0
