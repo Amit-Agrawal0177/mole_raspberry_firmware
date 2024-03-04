@@ -1,16 +1,3 @@
-#command = 'ffmpeg -f video4linux2 -input_format h264 -i /dev/video0 -f alsa -i default -c:v copy -c:a aac -strict experimental -f flv  ' + rtmp_url
-#command = 'ffmpeg -f video4linux2 -input_format h264 -i /dev/video0 -c:v copy -f flv ' + rtmp_url
-#command = 'ffmpeg -i rtmp://localhost:1935/live -c:v copy -c:a aac -strict experimental -f flv ' + rtmp_url
-#command = 'ffmpeg -i rtmp://localhost:1935/live -f alsa -ac 1 -ar 44100 -i hw:2,0  -c:v copy -c:a aac -strict experimental -f flv ' + rtmp_url
-#command = 'ffmpeg -i rtmp://localhost:1935/live -f alsa -i default -c:v copy -c:a aac -strict experimental -f flv ' + rtmp_url
-#command = 'ffmpeg -f video4linux2 -input_format h264 -i /dev/video0 -f alsa -i default -c:v copy -c:a aac -strict experimental -f flv  ' + rtmp_url
-#command = 'ffmpeg -f video4linux2 -input_format h264 -i rtmp://localhost:1935/live -f alsa -i default -c:v copy -c:a aac -strict experimental -f flv  ' + rtmp_url
-#command = '/usr/bin/ffmpeg -f dshow -i video="Integrated Webcam" -f dshow -i audio="Microphone (2- High Definition Audio Device)" -c:v libx264 -c:a aac -strict -2 -f flv ' + rtmp_url
-
-
-
-
-    
 import os
 import json
 import time
@@ -30,22 +17,8 @@ topic = config_data['topic']
 rtmp_url = f'rtmp://{url}/live/{topic}'
 allot_ip = ""
 
-gb_stats = {
-		"demand_mode" : "0",
-		"nw_strength" : "0",
-		"pir_status" : "0",
-		"adxl_status" : "0",
-		"stream_status" : "0",
-		"lat" : "0",
-		"long" : "0",
-		"x-axis" : "0",
-		"y-axis" : "0",
-		"z-axis" : "0" ,
-		"timestamp" : "" ,
-		"alert_mode" : "0",
-		"audio_flag" : "0",
-		"ver" : "1" 
-}
+with open("prev_stats.json", 'r') as file:
+    prev_data = json.load(file)
 
 def read_json_file():
     try:
@@ -55,8 +28,8 @@ def read_json_file():
         return json_data    
     except Exception as e:
         with open(file_path, 'w') as file:
-            json.dump(gb_stats, file, indent=2)
-        return gb_stats
+            json.dump(prev_data, file, indent=2)
+        return prev_data
         
 def get_ips_for_mac(target_mac, arp_output):
     pattern = re.compile(r"(\S+) \((\d+\.\d+\.\d+\.\d+)\) at (\S+)")
@@ -104,8 +77,9 @@ def stop_streaming():
     if process is not None and process.poll() is None:
         print(f"Stopping streaming.{process.pid}", flush=True)
         os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-	process.wait()
+        process.wait()
         process = None
+
 
 
 ip = find_ip_with_retry(mac)

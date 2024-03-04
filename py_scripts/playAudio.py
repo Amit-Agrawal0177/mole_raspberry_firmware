@@ -17,22 +17,8 @@ topic = config_data['topic']
 rtmp_url = f'rtmp://{url}/live/{topic}'
 allot_ip = ""
 
-gb_stats = {
-		"demand_mode" : "0",
-		"nw_strength" : "0",
-		"pir_status" : "0",
-		"adxl_status" : "0",
-		"stream_status" : "0",
-		"lat" : "0",
-		"long" : "0",
-		"x-axis" : "0",
-		"y-axis" : "0",
-		"z-axis" : "0" ,
-		"timestamp" : "" ,
-		"alert_mode" : "0",
-		"audio_flag" : "0",
-		"ver" : "1" 
-}
+with open("prev_stats.json", 'r') as file:
+    prev_data = json.load(file)
             
 def write_new_file(json_file_path, flag, mode):
     with open(json_file_path, 'r') as file:
@@ -51,8 +37,8 @@ def read_json_file():
         return json_data    
     except Exception as e:
         with open(file_path, 'w') as file:
-            json.dump(gb_stats, file, indent=2)
-        return gb_stats
+            json.dump(prev_data, file, indent=2)
+        return prev_data
         
 def get_ips_for_mac(target_mac, arp_output):
     pattern = re.compile(r"(\S+) \((\d+\.\d+\.\d+\.\d+)\) at (\S+)")

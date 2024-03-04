@@ -3,7 +3,6 @@ import json
 import subprocess
 import time
 from datetime import datetime, timedelta
-#import paho.mqtt.client as mqtt
 import serial
 
 import RPi.GPIO as GPIO

@@ -27,6 +27,9 @@ last_demand_message_time = time.time()
 config_file_path = 'config.json'
 with open(config_file_path, 'r') as file:
     config_data = json.load(file)
+    
+with open("prev_stats.json", 'r') as file:
+    prev_data = json.load(file)
 
 url = config_data['url']
 topic = config_data['topic']
@@ -37,24 +40,6 @@ password = config_data['password']
 port = config_data['port']
 broker_address = config_data['broker_address']
 allot_ip = ""
-
-gb_stats = {
-		"demand_mode" : "0",
-		"nw_strength" : "0",
-		"pir_status" : "0",
-		"adxl_status" : "0",
-		"stream_status" : "0",
-		"lat" : "0",
-		"long" : "0",
-		"x-axis" : "0",
-		"y-axis" : "0",
-		"z-axis" : "0" ,
-		"timestamp" : "" ,
-		"alert_mode" : "0",
-		"audio_flag" : "0",
-		"ver" : "1" 
-}
-
 
 def on_message(client, userdata, msg):
     global process
@@ -163,8 +148,8 @@ def read_json_file(file_path):
         return json_data    
     except Exception as e:
         with open(file_path, 'w') as file:
-            json.dump(gb_stats, file, indent=2)
-        return gb_stats
+            json.dump(prev_data, file, indent=2)
+        return prev_data
 
 def read_existing_file(file_path):
     try:
@@ -182,7 +167,7 @@ def write_prev_file(file_path, data):
             json.dump(data, file, indent=2)
     except Exception as e:
         with open(file_path, 'w') as file:
-            json.dump(gb_stats, file, indent=2)
+            json.dump(prev_data, file, indent=2)
 
 def write_existing_file(file_path, data):
     try:
