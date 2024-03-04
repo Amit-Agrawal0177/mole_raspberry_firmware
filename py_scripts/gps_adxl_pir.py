@@ -142,38 +142,47 @@ print(response, flush=True)
 
 
 location_timer = time.time() + location_publish_interval
-    
+
+def read_json_file(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            json_data = json.load(file)
+        return json_data    
+    except Exception as e:
+        with open("prev_stats.json", 'r') as file:
+            prev_data = json.load(file)
+            
+        with open(file_path, 'w') as file:
+            json.dump(prev_data, file, indent=2)
+        return prev_data
+
+def write_prev_file(file_path, data):
+    try:
+        with open(file_path, 'w') as file:
+            json.dump(data, file, indent=2)
+    except Exception as e:
+        with open(file_path, 'w') as file:
+            json.dump(data, file, indent=2)        
+
 try:    
     while True:        
         x, y, z = accelerometer.acceleration
         json_file_path = 'stat.json'
-        with open(json_file_path, 'r') as file:
-            stats = json.load(file)
+        stats = read_json_file(json_file_path)
             
         stats['x-axis'] = x
         stats['y-axis'] = y
-        stats['z-axis'] = z
-        
-        with open(json_file_path, 'w') as file:
-            json.dump(stats, file)
+        stats['z-axis'] = z   
         
         if (x1 - thr > x) or (x1 + thr < x) or (y1 - thr > y) or (y1 + thr < y) or (z1 - thr > z) or (z1 + thr < z):
             if accel_flag == 0:
                 print("**** intrp Occur **** ", flush=True)
                 #publish_mqtt(f'R/{topic}', json.dumps({"event": "activity"}))
-                json_file_path = 'stat.json'
-                with open(json_file_path, 'r') as file:
-                    stats = json.load(file)
                     
                 stats['adxl_status'] = "1"
-                stats['x-axis'] = x
-                stats['y-axis'] = y
-                stats['z-axis'] = z
                 cTime = datetime.now()
                 stats['timestamp'] = cTime.strftime('%Y:%m:%d %H:%M:%S')
-                
-                with open(json_file_path, 'w') as file:
-                    json.dump(stats, file)
+
             accel_count = 0
             x1 = x
             y1 = y
@@ -184,21 +193,15 @@ try:
             accel_flag = 0
             accel_count = 0
             print("**** inactivity Occur **** ", flush=True)
-            with open(json_file_path, 'r') as file:
-                stats = json.load(file)
                 
             stats['adxl_status'] = "0"
-            stats['x-axis'] = x
-            stats['y-axis'] = y
-            stats['z-axis'] = z
             cTime = datetime.now()
             stats['timestamp'] = cTime.strftime('%Y:%m:%d %H:%M:%S')
             
-            with open(json_file_path, 'w') as file:
-                json.dump(stats, file)
             #publish_mqtt(f'R/{topic}', json.dumps({"event": "inactivity"}))
             
-        accel_count = accel_count + 1     
+        accel_count = accel_count + 1
+        write_prev_file(json_file_path, stats)     
         
         current_time = time.time()
         if current_time >= location_timer:

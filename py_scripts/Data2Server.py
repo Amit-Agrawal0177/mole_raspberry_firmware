@@ -170,7 +170,7 @@ def write_prev_file(file_path, data):
             json.dump(data, file, indent=2)
     except Exception as e:
         with open(file_path, 'w') as file:
-            json.dump(prev_data, file, indent=2)
+            json.dump(data, file, indent=2)
 
 def write_existing_file(file_path, data):
     try:
