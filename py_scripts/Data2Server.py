@@ -185,6 +185,7 @@ def write_new_file(json_file_path, flag, mode):
     
     with open(json_file_path, 'w') as file:
         json.dump(stats, file)
+    write_prev_file("prev_stats.json", stats)
 
 
 push_interval = 10
