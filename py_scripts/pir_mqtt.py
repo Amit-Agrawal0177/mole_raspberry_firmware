@@ -52,6 +52,9 @@ def read_json_file():
             json_data = json.load(file)
         return json_data    
     except Exception as e:
+        with open("prev_stats.json", 'r') as file:
+            prev_data = json.load(file)
+
         with open(file_path, 'w') as file:
             json.dump(prev_data, file, indent=2)
         return prev_data
@@ -149,6 +152,8 @@ try:
                     #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement stop"}))
                     recording = False
                     chunk_start_time = time.time()
+        else:
+            GPIO.output(output_pin, GPIO.LOW)
 
         current_time = time.time()
         time.sleep(2)
