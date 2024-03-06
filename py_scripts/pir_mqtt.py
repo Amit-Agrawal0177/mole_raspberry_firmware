@@ -95,6 +95,7 @@ try:
     recording = False
     out = None
     chunk_start_time = time.time()
+    pir_time = None
     
     conn = sqlite3.connect('mole.db')
     cursor = conn.cursor()
@@ -121,6 +122,8 @@ try:
                 conn.commit() 
                     
                 start_time = time.time()
+                pir_time = time.time()
+
                 if not recording:
                     print("Starting to record...", flush=True)
                     #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement start"}))
@@ -137,12 +140,20 @@ try:
                     subprocess.run(ffmpeg_cmd, shell=True)
                     chunk_start_time = time.time()
 
+            if input_state == GPIO.LOW:
+                elapsed_time1 = time.time() - start_time
+                if elapsed_time1 >= buffer_time:
+                    GPIO.output(output_pin, GPIO.LOW)
+                    sql = f'''update stat set pir_status = "0" where id = 1;'''
+                    cursor.execute(sql)                        
+                    conn.commit()
+
             if recording:
                 elapsed_time = time.time() - start_time
                 if elapsed_time >= buffer_time:
-                    sql = f'''update stat set pir_status = "0" where id = 1;'''
-                    cursor.execute(sql)                        
-                    conn.commit() 
+                    # sql = f'''update stat set pir_status = "0" where id = 1;'''
+                    # cursor.execute(sql)                        
+                    # conn.commit() 
                     print("Stopping recording...", flush=True)
                     #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement stop"}))
                     recording = False
