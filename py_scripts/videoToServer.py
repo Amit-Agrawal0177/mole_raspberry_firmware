@@ -3,16 +3,18 @@ import datetime
 import requests
 import time
 import json
+import sqlite3
 
+conn = sqlite3.connect('mole.db')
+cursor = conn.cursor()    
 
-config_file_path = 'config.json'
+sql = '''select * from config; '''
+cursor.execute(sql)
+results = cursor.fetchall()
 
-try:
-    with open(config_file_path, 'r') as file:
-        config_data = json.load(file)
-except Exception as e:
-    print(f"Error reading config file: {e}")
-
+columns = [description[0] for description in cursor.description]
+config_data = dict(zip(columns, results[0]))
+conn.close()
 
 topic = config_data['topic']
 movement_folder = config_data['movement_path']

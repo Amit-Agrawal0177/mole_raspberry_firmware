@@ -8,6 +8,8 @@ import re
 from pydub import AudioSegment
 from pydub.playback import play
 import os
+import sqlite3
+
 
 output_pin = 18
 
@@ -19,17 +21,20 @@ def play_sound(sound_file):
     sound = AudioSegment.from_file(sound_file)
     play(sound)
 
-input_json_file = 'stat.json' 
-output_file = 'output.json'
 last_message_time = time.time()
 last_demand_message_time = time.time()
 
-config_file_path = 'config.json'
-with open(config_file_path, 'r') as file:
-    config_data = json.load(file)
-    
-with open("prev_stats.json", 'r') as file:
-    prev_data = json.load(file)
+
+conn = sqlite3.connect('mole.db')
+cursor = conn.cursor()    
+
+sql = '''select * from config; '''
+cursor.execute(sql)
+results = cursor.fetchall()
+
+columns = [description[0] for description in cursor.description]
+config_data = dict(zip(columns, results[0]))
+conn.close()
 
 url = config_data['url']
 topic = config_data['topic']
@@ -44,12 +49,19 @@ allot_ip = ""
 def on_message(client, userdata, msg):
     global process
     global last_message_time, last_demand_message_time
+    conn = sqlite3.connect('mole.db')
+    cursor = conn.cursor()
+    
     if msg.topic == f"Ia/{topic}":        
         temp_audio_file = "audio.mp3"
         with open(temp_audio_file, "wb") as audio_file:
             audio_file.write(msg.payload)
-        write_new_file(input_json_file, "1", "audio_flag")
+            
+        sql = '''update stat set audio_flag = "1" where id = 1;'''
+        cursor.execute(sql)                        
+        conn.commit()
     else:
+        
         message = msg.payload.decode("utf-8")
         print(f"message from MQTT broker: {message}", flush=True)
         try:    
@@ -57,16 +69,24 @@ def on_message(client, userdata, msg):
             if "ins" in message:
                 instruction = message["ins"]
                 if instruction == "start demand mode":
-                    write_new_file(input_json_file, "1", "demand_mode")
+                    
+                    sql = '''update stat set demand_mode = "1" where id = 1;'''
+                    cursor.execute(sql)                        
+                    conn.commit()
+                    
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "demand mode started"}))
                     last_demand_message_time = time.time()                    
                             
                 elif instruction == "start alert mode":
-                    write_new_file(input_json_file, "1", "alert_mode")
+                    sql = '''update stat set alert_mode = "1" where id = 1;'''
+                    cursor.execute(sql)
+                    conn.commit()
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "alert mode started"}))
                             
                 elif instruction == "stop alert mode":
-                    write_new_file(input_json_file, "0", "alert_mode")
+                    sql = '''update stat set alert_mode = "0" where id = 1;'''
+                    cursor.execute(sql)
+                    conn.commit()
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "alert mode stopped"}))
                     
                 elif instruction == "start reboot":
@@ -74,7 +94,9 @@ def on_message(client, userdata, msg):
                     reboot_raspberry_pi()
                     
                 elif instruction == "start streaming":
-                    write_new_file(input_json_file, "1", "stream_status")
+                    sql = '''update stat set stream_status = "1" where id = 1;'''
+                    cursor.execute(sql)
+                    conn.commit()
                     publish_mqtt(f'R/{topic}', json.dumps({"event": "stream mode started"}))
                     last_message_time = time.time()
                     
@@ -83,20 +105,17 @@ def on_message(client, userdata, msg):
                     ota_raspberry_pi()
                            
             elif "fps" in message:
-                d = read_existing_file(config_file_path)
-                d["fps"] = message["fps"]
-                d["height"] = message["height"]
-                d["width"] = message["width"]
-
-                write_existing_file(config_file_path, d)
+                sql = f'''update config set fps = "{message["fps"]}", height = "{message["height"]}", width = "{message["width"]}";'''
+                cursor.execute(sql)
+                conn.commit()
 
             elif "accel_thr" in message:
-                d = read_existing_file(config_file_path)
-                d["accel_thr"] = message["accel_thr"]
-
-                write_existing_file(config_file_path, d)
+                sql = f'''update config set accel_thr = "{message["accel_thr"]}";'''
+                cursor.execute(sql)
+                conn.commit()
         except:
             pass
+    conn.close()
     
 def reboot_raspberry_pi():
     try:
@@ -140,56 +159,27 @@ client.username_pw_set(user, password)
 client.connect(broker_address, port, 60)
 client.loop_start()  
 
-
-def read_json_file(file_path):
-    try:
-        with open(file_path, 'r') as file:
-            json_data = json.load(file)
-        return json_data    
-    except Exception as e:
-        with open("prev_stats.json", 'r') as file:
-            prev_data = json.load(file)
-            
-        with open(file_path, 'w') as file:
-            json.dump(prev_data, file, indent=2)
-        return prev_data
-
-def read_existing_file(file_path):
-    try:
-        with open(file_path, 'r') as file:
-            json_data = json.load(file)
-        return json_data
-    except Exception as e:
-        with open(file_path, 'w') as file:
-            json.dump([], file, indent=2)
-        return []
-
-def write_prev_file(file_path, data):
-    try:
-        with open(file_path, 'w') as file:
-            json.dump(data, file, indent=2)
-    except Exception as e:
-        with open(file_path, 'w') as file:
-            json.dump(data, file, indent=2)
-
-def write_existing_file(file_path, data):
-    try:
-        with open(file_path, 'w') as file:
-            json.dump(data, file, indent=2)
-    except Exception as e:
-        with open(file_path, 'w') as file:
-            json.dump([], file, indent=2)
-            
-def write_new_file(json_file_path, flag, mode):
-    with open(json_file_path, 'r') as file:
-        stats = json.load(file)
-        
-    stats[mode] = flag
+def update_output(data):
+    conn = sqlite3.connect('mole.db')
+    cursor = conn.cursor()
+    sql =  f'''INSERT INTO output (  demand_mode,  nw_strength,  pir_status,  adxl_status,  stream_status,  alert_mode,  audio_flag,  lat,  long,  x_axis,  y_axis,  z_axis,  timestamp,  ver) 
+    VALUES (  "{data["demand_mode"]}",  "{data["nw_strength"]}", "{data["pir_status"]}", "{data["adxl_status"]}", "{data["stream_status"]}", "{data["alert_mode"]}", "{data["audio_flag"]}",
+    {data["lat"]}, {data["long"]}, {data["x_axis"]}, {data["y_axis"]}, {data["z_axis"]}, "{data["timestamp"]}", "{data["ver"]}");'''
+    #print(sql, flush=True)  
+    cursor.execute(sql)
+    conn.commit() 
+    conn.close()
     
-    with open(json_file_path, 'w') as file:
-        json.dump(stats, file)
-    write_prev_file("prev_stats.json", stats)
-
+def update_prev(data):
+    conn = sqlite3.connect('mole.db')
+    cursor = conn.cursor()
+    sql =  f'''update stat set demand_mode = "{data["demand_mode"]}",  nw_strength = "{data["nw_strength"]}",  pir_status = "{data["pir_status"]}",  adxl_status = "{data["adxl_status"]}",  
+    stream_status = "{data["stream_status"]}",  alert_mode = "{data["alert_mode"]}",  audio_flag = "{data["audio_flag"]}",  lat = {data["lat"]},  long = {data["long"]},  x_axis = {data["x_axis"]},  
+    y_axis = {data["y_axis"]},  z_axis = {data["z_axis"]},  timestamp = "{data["timestamp"]}",  ver = "{data["ver"]}" where id  = 2;'''
+    #print(sql, flush=True)  
+    cursor.execute(sql)
+    conn.commit() 
+    conn.close()
 
 push_interval = 10
 data_timer = time.time() + push_interval
@@ -203,12 +193,24 @@ save_time = time.time()
 def main():
     global data_timer, push_interval, flag1, flag2, flag3, flag4, current_time, last_demand_message_time, last_message_time, save_time
 
-    while True:
-        json_data = read_json_file(input_json_file)
+    conn = sqlite3.connect('mole.db')
+    cursor = conn.cursor()
+    
+    while True:        
+        sql = '''select * from stat order by id; '''
+        cursor.execute(sql)
+        results = cursor.fetchall()
         
-        existing_data = read_existing_file(output_file)
+        columns = [description[0] for description in cursor.description]
+        json_data = dict(zip(columns, results[0]))
+        #print(json_data, flush=True)
         
-        prev_data = read_json_file("prev_stats.json")
+        columns = [description[0] for description in cursor.description]
+        prev_data = dict(zip(columns, results[1]))        
+        #print(prev_data, flush=True)        
+         
+        
+        update_prev(json_data)
         
         if json_data["adxl_status"] == "0" and prev_data["adxl_status"] == "1":
             publish_mqtt(f'R/{topic}', json.dumps({"event": "adxl movement stopped"}))
@@ -220,9 +222,7 @@ def main():
             publish_mqtt(f'R/{topic}', json.dumps({"event": "pir movement stopped"}))
             
         if json_data["pir_status"] == "1" and prev_data["pir_status"] == "0":
-            publish_mqtt(f'R/{topic}', json.dumps({"event": "pir movement started"}))
-            
-        write_prev_file("prev_stats.json", json_data)
+            publish_mqtt(f'R/{topic}', json.dumps({"event": "pir movement started"}))            
             
         if json_data["demand_mode"] == "1" and json_data["adxl_status"] == "1":
             if flag1 == 0:
@@ -231,10 +231,10 @@ def main():
                 flag3 = 0
                 flag4 = 0
                 push_interval = 10
-                data_timer = current_time + push_interval
-                
-            existing_data.append(json_data)        
-            write_existing_file(output_file, existing_data)   
+                data_timer = current_time + push_interval                
+                 
+            update_output(json_data)
+            
             
         elif json_data["demand_mode"] == "1" and json_data["adxl_status"] == "0":
             if flag2 == 0:
@@ -248,9 +248,8 @@ def main():
                 
             save_time = time.time()
             if save_time >= save_timer:
-                save_timer = save_time + 60
-                existing_data.append(json_data)
-                write_existing_file(output_file, existing_data)    
+                save_timer = save_time + 60                   
+                update_output(json_data) 
             
         elif json_data["demand_mode"] == "0" and json_data["adxl_status"] == "1":
             if flag3 == 0:
@@ -264,9 +263,8 @@ def main():
                 
             save_time = time.time()
             if save_time >= save_timer:
-                save_timer = save_time + 60
-                existing_data.append(json_data)
-                write_existing_file(output_file, existing_data)  
+                save_timer = save_time + 60                
+                update_output(json_data)
             
         elif json_data["demand_mode"] == "0" and json_data["adxl_status"] == "0":
             if flag4 == 0:
@@ -280,34 +278,46 @@ def main():
                 
             save_time = time.time()
             if save_time >= save_timer:
-                save_timer = save_time + 600
-                existing_data.append(json_data)
-                write_existing_file(output_file, existing_data)  
+                save_timer = save_time + 600                
+                update_output(json_data)
 
         else :
-            existing_data.append(json_data)
-            write_existing_file(output_file, existing_data) 
+            update_output(json_data)
 
         current_time = time.time()
-        #print(f'{json_data["demand_mode"]} {json_data["adxl_status"]} {current_time} {data_timer} {data_timer - current_time}', flush=True)
+        
+        sql = '''select * from output; '''
+        cursor.execute(sql)
+        results = cursor.fetchall()      
+        columns = [description[0] for description in cursor.description]
+        existing_data = [dict(zip(columns, row)) for row in results] 
+        
         if current_time >= data_timer:
             publish_mqtt(f'R/{topic}', json.dumps(existing_data))
-            write_existing_file(output_file, [])
+            sql = '''delete from output;'''
+            cursor.execute(sql)
+            conn.commit()
             data_timer = current_time + push_interval
         
         if time.time() - last_message_time > 30:
             if json_data["stream_status"] == "1":
-                write_new_file(input_json_file, "0", "stream_status")
+                sql = '''update stat set stream_status = "0" where id = 1;'''
+                cursor.execute(sql)
+                conn.commit()
                 publish_mqtt(f'R/{topic}', json.dumps({"event": "stream mode stopped"}))
         
         if time.time() - last_demand_message_time > 30:
             if json_data["demand_mode"] == "1":
-                write_new_file(input_json_file, "0", "demand_mode")
+                sql = '''update stat set demand_mode = "0" where id = 1;'''
+                cursor.execute(sql)
+                conn.commit()                
                 publish_mqtt(f'R/{topic}', json.dumps({"event": "demand mode stopped"}))
                 
         time.sleep(10)
 
 if __name__ == "__main__":
     main()
+    conn.close()
+    
 
 

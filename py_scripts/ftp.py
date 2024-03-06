@@ -1,10 +1,18 @@
 import subprocess
 import json
 import os
+import sqlite3
 
-config_file_path = 'config.json'
-with open(config_file_path, 'r') as file:
-    config_data = json.load(file)
+conn = sqlite3.connect('mole.db')
+cursor = conn.cursor()    
+
+sql = '''select * from config; '''
+cursor.execute(sql)
+results = cursor.fetchall()
+
+columns = [description[0] for description in cursor.description]
+config_data = dict(zip(columns, results[0]))
+conn.close()
 
 output_folder = config_data['recording_path']
 

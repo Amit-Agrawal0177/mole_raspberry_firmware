@@ -6,3 +6,4 @@ output.json
 config.json
 stat.json
 prev_stats.json
+mole.db

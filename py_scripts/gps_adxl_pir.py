@@ -4,7 +4,7 @@ import subprocess
 import time
 from datetime import datetime, timedelta
 import serial
-
+import sqlite3
 import RPi.GPIO as GPIO
 import busio
 import adafruit_adxl34x
@@ -22,9 +22,16 @@ z1 = 0
 accel_flag = 0
 accel_count = 0
 
-config_file_path = 'config.json'
-with open(config_file_path, 'r') as file:
-    config_data = json.load(file)
+conn = sqlite3.connect('mole.db')
+cursor = conn.cursor()    
+
+sql = '''select * from config; '''
+cursor.execute(sql)
+results = cursor.fetchall()
+
+columns = [description[0] for description in cursor.description]
+config_data = dict(zip(columns, results[0]))
+conn.close()
 
 thr = config_data['accel_thr']
 location_publish_interval = config_data['location_publish_interval']
@@ -75,22 +82,15 @@ def on_publish_location():
                 print(f"r {x}", flush=True)
                 restart_var = 0
         
-        json_file_path = 'stat.json'
-        with open(json_file_path, 'r') as file:
-            stats = json.load(file)
-            
-        stats['lat'] = output_lat
-        stats['long'] = output_long
-        cTime = datetime.now()
-        stats['timestamp'] = cTime.strftime('%Y:%m:%d %H:%M:%S')
-        stats['nw_strength'] = nw
-        
-        with open(json_file_path, 'w') as file:
-            json.dump(stats, file)
+        conn = sqlite3.connect('mole.db')
+        cursor = conn.cursor() 
+        sql = f'''update stat set lat = {output_lat}, long = {output_long}, nw_strength = "{nw}" where id = 1;'''
+        cursor.execute(sql)                        
+        conn.commit()
+        conn.close()
         
         location_message = {"lat": latitude, "long": longitude}
-        #print(f"gps {location_message}", flush=True)
-        #publish_mqtt(f'R/{topic}', json.dumps(location_message))
+        
     except Exception as e:
         print(f"An error occurred: {str(e)}", flush=True)
 
@@ -141,47 +141,28 @@ response = ser.read_until(b'OK\r\n').decode(errors='ignore')
 print(response, flush=True)
 
 
-location_timer = time.time() + location_publish_interval
-
-def read_json_file(file_path):
-    try:
-        with open(file_path, 'r') as file:
-            json_data = json.load(file)
-        return json_data    
-    except Exception as e:
-        with open("prev_stats.json", 'r') as file:
-            prev_data = json.load(file)
-            
-        with open(file_path, 'w') as file:
-            json.dump(prev_data, file, indent=2)
-        return prev_data
-
-def write_prev_file(file_path, data):
-    try:
-        with open(file_path, 'w') as file:
-            json.dump(data, file, indent=2)
-    except Exception as e:
-        with open(file_path, 'w') as file:
-            json.dump(data, file, indent=2)        
+location_timer = time.time() + location_publish_interval     
 
 try:    
+    conn = sqlite3.connect('mole.db')
+    cursor = conn.cursor()
+    
     while True:        
         x, y, z = accelerometer.acceleration
-        json_file_path = 'stat.json'
-        stats = read_json_file(json_file_path)
             
-        stats['x-axis'] = x
-        stats['y-axis'] = y
-        stats['z-axis'] = z   
+        sql = f'''update stat set x_axis = {x}, y_axis = {y}, z_axis = {z} where id = 1;'''
+        cursor.execute(sql)                        
+        conn.commit()
+        cTime = datetime.now()
         
         if (x1 - thr > x) or (x1 + thr < x) or (y1 - thr > y) or (y1 + thr < y) or (z1 - thr > z) or (z1 + thr < z):
             if accel_flag == 0:
                 print("**** intrp Occur **** ", flush=True)
                 #publish_mqtt(f'R/{topic}', json.dumps({"event": "activity"}))
-                    
-                stats['adxl_status'] = "1"
-                cTime = datetime.now()
-                stats['timestamp'] = cTime.strftime('%Y:%m:%d %H:%M:%S')
+                
+                sql = f'''update stat set adxl_status = "1", timestamp = "{cTime.strftime('%Y:%m:%d %H:%M:%S')}" where id = 1;'''
+                cursor.execute(sql)                        
+                conn.commit() 
 
             accel_count = 0
             x1 = x
@@ -194,14 +175,13 @@ try:
             accel_count = 0
             print("**** inactivity Occur **** ", flush=True)
                 
-            stats['adxl_status'] = "0"
-            cTime = datetime.now()
-            stats['timestamp'] = cTime.strftime('%Y:%m:%d %H:%M:%S')
+            sql = f'''update stat set adxl_status = "0", timestamp = "{cTime.strftime('%Y:%m:%d %H:%M:%S')}" where id = 1;'''
+            cursor.execute(sql)                        
+            conn.commit() 
             
             #publish_mqtt(f'R/{topic}', json.dumps({"event": "inactivity"}))
             
-        accel_count = accel_count + 1
-        write_prev_file(json_file_path, stats)     
+        accel_count = accel_count + 1    
         
         current_time = time.time()
         if current_time >= location_timer:
@@ -211,4 +191,4 @@ try:
         time.sleep(1)
 
 except KeyboardInterrupt:
-	pass
+	conn.close()

@@ -5,40 +5,24 @@ import subprocess
 import re
 import signal
 from pydub import AudioSegment
+import sqlite3
 
+conn = sqlite3.connect('mole.db')
+cursor = conn.cursor()    
 
-config_file_path = 'config.json'
-with open(config_file_path, 'r') as file:
-    config_data = json.load(file)
+sql = '''select * from config; '''
+cursor.execute(sql)
+results = cursor.fetchall()
+
+columns = [description[0] for description in cursor.description]
+config_data = dict(zip(columns, results[0]))
+conn.close()
 
 mac = config_data['ameba_mac']
 url = config_data['url']
 topic = config_data['topic']
 rtmp_url = f'rtmp://{url}/live/{topic}'
 allot_ip = ""
-
-with open("prev_stats.json", 'r') as file:
-    prev_data = json.load(file)
-            
-def write_new_file(json_file_path, flag, mode):
-    with open(json_file_path, 'r') as file:
-        stats = json.load(file)
-        
-    stats[mode] = flag
-    
-    with open(json_file_path, 'w') as file:
-        json.dump(stats, file)
-        
-def read_json_file():
-    try:
-        file_path = 'stat.json' 
-        with open(file_path, 'r') as file:
-            json_data = json.load(file)
-        return json_data    
-    except Exception as e:
-        with open(file_path, 'w') as file:
-            json.dump(prev_data, file, indent=2)
-        return prev_data
         
 def get_ips_for_mac(target_mac, arp_output):
     pattern = re.compile(r"(\S+) \((\d+\.\d+\.\d+\.\d+)\) at (\S+)")
@@ -91,11 +75,27 @@ allot_ip = ip[0]
 process = None
 last_message_time = time.time()
 
+
+conn = sqlite3.connect('mole.db')
+cursor = conn.cursor()
+
 while True:
+    sql = '''select * from stat order by id; '''
+    cursor.execute(sql)
+    results = cursor.fetchall()
+    
+    columns = [description[0] for description in cursor.description]
+    json_data = dict(zip(columns, results[0]))
+    #print(json_data, flush=True)
+        
     time.sleep(1)
-    json_data = read_json_file()
     
     if json_data["audio_flag"] == "1":
         print(f"Start playing audio", flush=True)
         play_via_file()
-        write_new_file('stat.json', "0", "audio_flag")
+        
+        sql = '''update stat set audio_flag = "0" where id = 1;'''
+        cursor.execute(sql)
+        conn.commit()
+
+conn.close()

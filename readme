@@ -107,6 +107,80 @@ sudo systemctl start dnsmasq
 sudo systemctl enable hostapd
 sudo systemctl enable dnsmasq
 
+sudo apt-get install sqlite3
+sqlite3 mole.db
+
+CREATE TABLE IF NOT EXISTS config (
+    id INTEGER PRIMARY KEY,
+    url TEXT,
+    topic TEXT,
+    user TEXT,
+    password TEXT,
+    port INTEGER,
+    broker_address TEXT,
+    recording_path TEXT,
+    movement_path TEXT,
+    fps INTEGER,
+    buffer_time INTEGER,
+    height INTEGER,
+    width INTEGER,
+    location_publish_interval INTEGER,
+    accel_thr INTEGER,
+    duration INTEGER,
+    ameba_mac TEXT
+);
+
+INSERT INTO config ( url, user, password, broker_address,  topic,  port,  recording_path,  movement_path,  fps,  buffer_time,  height,  width,  location_publish_interval,  accel_thr,  duration,  ameba_mac) 
+VALUES ("molertmp.9930i.com", "mole", "Team@9930i", "mole_mq.9930i.com",  "4",  27189,  "recordings",  "movement",  20,  30,  480,  640,  10,  2,  300,  "54:f2:9f:51:68:d8");
+
+CREATE TABLE stat (
+  id INTEGER PRIMARY KEY,
+  demand_mode TEXT,
+  nw_strength TEXT,
+  pir_status TEXT,
+  adxl_status TEXT,
+  stream_status TEXT,
+  alert_mode TEXT,
+  audio_flag TEXT,
+  lat REAL,
+  long REAL,
+  x_axis REAL,
+  y_axis REAL,
+  z_axis REAL,
+  timestamp TEXT,
+  ver TEXT
+);
+
+INSERT INTO stat (  demand_mode,  nw_strength,  pir_status,  adxl_status,  stream_status,  alert_mode,  audio_flag,  lat,  long,  x_axis,  y_axis,  z_axis,  timestamp,  ver) 
+VALUES (  "0",  "30",  "0",  "1",  "0",  "1",  "0",  22.68637755,  75.8600462,  -1.569064,  0.0,  -7.8845466,  "2024-03-05 12:01:20",  "1");
+
+CREATE TABLE output (
+  demand_mode TEXT,
+  nw_strength TEXT,
+  pir_status TEXT,
+  adxl_status TEXT,
+  stream_status TEXT,
+  alert_mode TEXT,
+  audio_flag TEXT,
+  lat REAL,
+  long REAL,
+  x_axis REAL,
+  y_axis REAL,
+  z_axis REAL,
+  timestamp TEXT,
+  ver TEXT
+);
+
+
+'''update stat set demand_mode = 1 where id = 1;'''
+
+
+
+
+
+
+
+
 
 
 

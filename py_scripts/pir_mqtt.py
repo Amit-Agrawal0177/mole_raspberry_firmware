@@ -7,12 +7,19 @@ import json
 import subprocess
 import serial
 import re
-
 import subprocess
+import sqlite3
 
-config_file_path = 'config.json'
-with open(config_file_path, 'r') as file:
-    config_data = json.load(file)
+conn = sqlite3.connect('mole.db')
+cursor = conn.cursor()    
+
+sql = '''select * from config; '''
+cursor.execute(sql)
+results = cursor.fetchall()
+
+columns = [description[0] for description in cursor.description]
+config_data = dict(zip(columns, results[0]))
+conn.close()
 
 url = config_data['url']
 
@@ -41,33 +48,7 @@ GPIO.setup(output_pin, GPIO.OUT)
 
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
-    
-with open("prev_stats.json", 'r') as file:
-    prev_data = json.load(file)
 
-def read_json_file():
-    try:
-        file_path = 'stat.json' 
-        with open(file_path, 'r') as file:
-            json_data = json.load(file)
-        return json_data    
-    except Exception as e:
-        with open("prev_stats.json", 'r') as file:
-            prev_data = json.load(file)
-
-        with open(file_path, 'w') as file:
-            json.dump(prev_data, file, indent=2)
-        return prev_data
-
-def write_new_file(flag, mode):    
-    json_file_path = 'stat.json' 
-    with open(json_file_path, 'r') as file:
-        stats = json.load(file)
-        
-    stats[mode] = flag
-    
-    with open(json_file_path, 'w') as file:
-        json.dump(stats, file)
         
 allot_ip = ""
 
@@ -114,17 +95,30 @@ try:
     recording = False
     out = None
     chunk_start_time = time.time()
+    
+    conn = sqlite3.connect('mole.db')
+    cursor = conn.cursor()
 
     while True:        
         input_state = GPIO.input(input_pin)
+        
         print(input_state, flush="True")
-        json_data = read_json_file()
+        sql = '''select * from stat where id = 1; '''
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        
+        columns = [description[0] for description in cursor.description]
+        json_data = dict(zip(columns, results[0]))
+        #print(json_data, flush=True)
+        
     
         if json_data["alert_mode"] == "1":
+            GPIO.output(output_pin, input_state)
 
             if input_state == GPIO.HIGH:
-                write_new_file("1", 'pir_status')
-                GPIO.output(output_pin, GPIO.HIGH)
+                sql = f'''update stat set pir_status = "1" where id = 1;'''
+                cursor.execute(sql)                        
+                conn.commit() 
                     
                 start_time = time.time()
                 if not recording:
@@ -146,8 +140,9 @@ try:
             if recording:
                 elapsed_time = time.time() - start_time
                 if elapsed_time >= buffer_time:
-                    write_new_file("0", 'pir_status')
-                    GPIO.output(output_pin, GPIO.LOW)
+                    sql = f'''update stat set pir_status = "0" where id = 1;'''
+                    cursor.execute(sql)                        
+                    conn.commit() 
                     print("Stopping recording...", flush=True)
                     #publish_mqtt(f'R/{topic}', json.dumps({"status": "movement stop"}))
                     recording = False
@@ -160,3 +155,4 @@ try:
 
 except KeyboardInterrupt:
     GPIO.cleanup()
+    conn.close()
